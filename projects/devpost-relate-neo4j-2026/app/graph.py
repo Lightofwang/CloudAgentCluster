@@ -18,7 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import relate
 
-DEFAULT_STORE_PATH = os.environ.get("GRAPH_STORE_PATH", "./data/graphlens.rl")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_STORE_PATH = os.environ.get(
+    "GRAPH_STORE_PATH", str(PROJECT_ROOT / "data" / "graphlens.rl")
+)
 
 
 def _serialize_val(val: Any) -> Any:

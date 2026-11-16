@@ -16,7 +16,7 @@
   };
 
   const EXPECTED_PASSCODE_HASH =
-    "a0a0f6923d1beee1047d19fb7669e5d28386272bf439fec61e4057861c480860";
+    "4ac4e2244373f3c0bdfd4d735076cdd1190f7fbb0e7fee4e9b4c943714b5249e";
 
   // 纯 JS SHA-256 实现，兼容 HTTPS、localhost 及 file:// 环境
   function sha256Hex(str) {

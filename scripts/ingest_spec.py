@@ -20,7 +20,7 @@ from typing import Any
 TZ_CN = timezone(timedelta(hours=8))
 DEFAULT_ALLOWED_OWNER = "Lightofwang"
 # 仅存储单向不可逆的 SHA-256 哈希，不在公开仓库保存明文口令
-DEFAULT_PASSCODE_HASH = "a0a0f6923d1beee1047d19fb7669e5d28386272bf439fec61e4057861c480860"
+DEFAULT_PASSCODE_HASH = "4ac4e2244373f3c0bdfd4d735076cdd1190f7fbb0e7fee4e9b4c943714b5249e"
 
 
 def expected_passcode_hash() -> str:

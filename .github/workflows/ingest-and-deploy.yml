@@ -164,11 +164,13 @@ jobs:
       - name: Inject HUB_PASSCODE SHA-256 hash into frontend
         env:
           HUB_PASSCODE: ${{ secrets.HUB_PASSCODE }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           python3 - <<'PY'
           import hashlib, os, re
           from pathlib import Path
 
+          run_id = os.environ.get("RUN_ID", "latest").strip() or "latest"
           secret = os.environ.get("HUB_PASSCODE", "").strip()
           if secret:
               digest = hashlib.sha256(secret.encode("utf-8")).hexdigest()
@@ -185,6 +187,16 @@ jobs:
               print("Injected SHA-256 hash from secrets.HUB_PASSCODE into site/assets/app.js")
           else:
               print("secrets.HUB_PASSCODE is not set; using default hash in site/assets/app.js")
+
+          for html_name in ("site/index.html", "site/submit.html"):
+              html_path = Path(html_name)
+              html_text = html_path.read_text(encoding="utf-8")
+              html_updated = re.sub(
+                  r'assets/app\.js(\?v=[^"]*)?',
+                  f"assets/app.js?v={run_id}",
+                  html_text,
+              )
+              html_path.write_text(html_updated, encoding="utf-8")
           PY
 
       - name: Setup Pages

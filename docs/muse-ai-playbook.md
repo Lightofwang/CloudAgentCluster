@@ -28,10 +28,11 @@
 ## 第二步：在 Muse AI 中创建每日定时任务
 
 > **安全访问说明（非常重要）**：
-> 1. 为防止开源仓库被他人恶意提交，网站已开启**口令 + GitHub 所有者双重保护**：默认专属口令为 `MUSE-LIGHT-2026`。
-> 2. 请在 **Muse AI 云端浏览器**中预先登录一次你本人的 GitHub 账号 **`Lightofwang`**（或配置你的 GitHub PAT），GitHub Actions 仅放行由 `Lightofwang` 提交且口令校验通过的 Issue。
+> 1. 为防止开源仓库被他人恶意提交，网站已开启**口令 + GitHub 所有者双重保护**：仓库内**只保存口令的不可逆 SHA-256 哈希值**，绝对不会在公开文件里暴露明文口令。你的实际口令保存在本地被忽略的 `.env.local` 中（下方提示词中的 `<YOUR_SECRET_PASSCODE>` 需在复制到 `muse.ai` 时替换为你的真实口令）。
+> 2. 如果需要更换口令，可在仓库 **Settings → Secrets and variables → Actions** 中配置 `HUB_PASSCODE`，并同步更新 `site/assets/app.js` 中的哈希值。
+> 3. 请在 **Muse AI 云端浏览器**中预先登录一次你本人的 GitHub 账号 **`Lightofwang`**（或配置你的 GitHub PAT），GitHub Actions 仅放行由 `Lightofwang` 提交且口令校验通过的 Issue。
 
-在 `muse.ai` 创建一个 **Daily Scheduled Task**（例如每天上午 **09:00** 运行），并将下方完整 Prompt 复制进去：
+在 `muse.ai` 创建一个 **Daily Scheduled Task**（例如每天上午 **09:00** 运行），并将下方完整 Prompt 中的 `<YOUR_SECRET_PASSCODE>` 替换为你本地 `.env.local` 里保存的口令后复制进去：
 
 ```text
 You are my automated Hackathon Scout & Architect. Run this task daily:
@@ -52,9 +53,9 @@ You are my automated Hackathon Scout & Architect. Run this task daily:
    - `plan.md`: Step-by-step implementation phases (Phase 1 Backend, Phase 2 Frontend, Phase 3 Automated Tests & Verification).
 
 5. Open my protected submission hub in your browser (the `?key=` parameter automatically unlocks `#submit-passcode`):
-   https://lightofwang.github.io/CloudAgentCluster/submit.html?key=MUSE-LIGHT-2026
-   Verify `#submit-passcode` is filled with `MUSE-LIGHT-2026` (if empty, fill it), then fill in the form fields by their fixed IDs:
-   - `#submit-passcode`: MUSE-LIGHT-2026
+   https://lightofwang.github.io/CloudAgentCluster/submit.html?key=<YOUR_SECRET_PASSCODE>
+   Verify `#submit-passcode` is filled with `<YOUR_SECRET_PASSCODE>` (if empty, fill it), then fill in the form fields by their fixed IDs:
+   - `#submit-passcode`: <YOUR_SECRET_PASSCODE>
    - `#hackathon-title`: Hackathon & project title
    - `#hackathon-slug`: lowercase kebab-case slug (e.g. devpost-agent-arena-2026)
    - `#hackathon-platform`: devpost | lablab | dorahacks

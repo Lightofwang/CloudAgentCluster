@@ -19,12 +19,15 @@ from typing import Any
 
 TZ_CN = timezone(timedelta(hours=8))
 DEFAULT_ALLOWED_OWNER = "Lightofwang"
-DEFAULT_PASSCODE = "MUSE-LIGHT-2026"
+# 仅存储单向不可逆的 SHA-256 哈希，不在公开仓库保存明文口令
+DEFAULT_PASSCODE_HASH = "a0a0f6923d1beee1047d19fb7669e5d28386272bf439fec61e4057861c480860"
 
 
 def expected_passcode_hash() -> str:
-    secret = os.environ.get("HUB_PASSCODE", "").strip() or DEFAULT_PASSCODE
-    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+    secret = os.environ.get("HUB_PASSCODE", "").strip()
+    if secret:
+        return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+    return DEFAULT_PASSCODE_HASH
 
 
 def verify_submission_auth(

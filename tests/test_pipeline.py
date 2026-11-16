@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -12,7 +13,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
-from ingest_spec import DEFAULT_PASSCODE, expected_passcode_hash, ingest_entry, parse_issue_markdown  # noqa: E402
+from ingest_spec import expected_passcode_hash, ingest_entry, parse_issue_markdown  # noqa: E402
 from publish_project import publish_project  # noqa: E402
 from scaffold_fullstack import scaffold_project  # noqa: E402
 from sync_and_queue import _is_owner_trusted, mark_status, sync_from_site_url  # noqa: E402
@@ -259,33 +260,41 @@ Web3, AI Agent
             server.server_close()
 
     def test_05_security_rejects_unauthorized_actor_and_wrong_passcode(self):
-        base_payload = {
-            "slug": "sec-test-hack",
-            "title": "Security Gate Test",
-            "platform": "devpost",
-            "spec_content": "# Spec",
-            "plan_content": "# Plan",
-            "auth_hash": expected_passcode_hash(),
-        }
+        prev_passcode = os.environ.get("HUB_PASSCODE")
+        os.environ["HUB_PASSCODE"] = "test-only-dummy-passcode"
+        try:
+            base_payload = {
+                "slug": "sec-test-hack",
+                "title": "Security Gate Test",
+                "platform": "devpost",
+                "spec_content": "# Spec",
+                "plan_content": "# Plan",
+                "auth_hash": expected_passcode_hash(),
+            }
 
-        # 1. 非本人提交必须被拒绝
-        with self.assertRaises(PermissionError):
-            ingest_entry(base_payload, self.tmp_root, actor="random-stranger", require_auth=True)
+            # 1. 非本人提交必须被拒绝
+            with self.assertRaises(PermissionError):
+                ingest_entry(base_payload, self.tmp_root, actor="random-stranger", require_auth=True)
 
-        # 2. 口令错误或缺失必须被拒绝
-        bad_pass_payload = dict(base_payload)
-        bad_pass_payload["auth_hash"] = "0" * 64
-        with self.assertRaises(PermissionError):
-            ingest_entry(bad_pass_payload, self.tmp_root, actor="Lightofwang", require_auth=True)
+            # 2. 口令错误或缺失必须被拒绝
+            bad_pass_payload = dict(base_payload)
+            bad_pass_payload["auth_hash"] = "0" * 64
+            with self.assertRaises(PermissionError):
+                ingest_entry(bad_pass_payload, self.tmp_root, actor="Lightofwang", require_auth=True)
 
-        # 3. 本人 + 正确口令（或明文 passcode）放行入库
-        valid_payload = dict(base_payload)
-        valid_payload.pop("auth_hash")
-        valid_payload["passcode"] = DEFAULT_PASSCODE
-        entry = ingest_entry(valid_payload, self.tmp_root, actor="Lightofwang", require_auth=True)
-        self.assertEqual(entry["submitted_by"], "Lightofwang")
-        self.assertTrue(_is_owner_trusted(entry))
-        self.assertFalse(_is_owner_trusted({"slug": "evil", "submitted_by": "attacker"}))
+            # 3. 本人 + 正确口令（或明文 passcode）放行入库
+            valid_payload = dict(base_payload)
+            valid_payload.pop("auth_hash")
+            valid_payload["passcode"] = "test-only-dummy-passcode"
+            entry = ingest_entry(valid_payload, self.tmp_root, actor="Lightofwang", require_auth=True)
+            self.assertEqual(entry["submitted_by"], "Lightofwang")
+            self.assertTrue(_is_owner_trusted(entry))
+            self.assertFalse(_is_owner_trusted({"slug": "evil", "submitted_by": "attacker"}))
+        finally:
+            if prev_passcode is None:
+                os.environ.pop("HUB_PASSCODE", None)
+            else:
+                os.environ["HUB_PASSCODE"] = prev_passcode
 
 
 if __name__ == "__main__":

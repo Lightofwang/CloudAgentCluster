@@ -21,7 +21,7 @@
         "Developer Tools"
       ],
       "match_score": 86,
-      "status": "pending_dev",
+      "status": "in_dev",
       "spec_path": "data/specs/devpost-relate-neo4j-2026/spec.md",
       "plan_path": "data/specs/devpost-relate-neo4j-2026/plan.md",
       "project_type": "fullstack-web",

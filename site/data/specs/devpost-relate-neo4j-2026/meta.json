@@ -1,0 +1,25 @@
+{
+  "id": "devpost-relate-neo4j-2026",
+  "slug": "devpost-relate-neo4j-2026",
+  "title": "Relate by Neo4j Hackathon: GraphLens — Connected-Context Agent Memory Workbench",
+  "platform": "devpost",
+  "source_url": "https://relate.devpost.com/",
+  "deadline": "2026-12-11",
+  "prize_pool": "$6,197 (hardware: Mac Studio + 2x Mac mini)",
+  "tags": [
+    "AI Agent",
+    "Graph Database",
+    "Full-Stack",
+    "Developer Tools"
+  ],
+  "match_score": 86,
+  "status": "pending_dev",
+  "spec_path": "data/specs/devpost-relate-neo4j-2026/spec.md",
+  "plan_path": "data/specs/devpost-relate-neo4j-2026/plan.md",
+  "project_type": "fullstack-web",
+  "summary": "用 Relate 嵌入式图数据库把笔记与 Agent 执行轨迹变成可查询、可溯源的知识图谱，本地运行、零付费 API。",
+  "repo_url": "",
+  "fallback_path": "projects/devpost-relate-neo4j-2026",
+  "created_at": "2026-11-16T11:46:22+08:00",
+  "completed_at": ""
+}

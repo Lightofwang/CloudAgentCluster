@@ -5,31 +5,29 @@ description: 自动从 CloudAgentCluster 中转网站/队列读取 pending_dev �
 
 # Hackathon Spec Reader & Auto Developer Workflow
 
-每当定时任务触发或手动唤醒执行 Hackathon 自动研发时，请严格按以下四步流程执行：
+每当定时任务触发或手动唤醒执行 Hackathon 自动研发时，请严格按以下四步流程执行（支持本地 Antigravity App 与 EC2 CLI 多节点并行不冲突）：
 
-## Step 1: 同步并读取待开发任务队列 (`pending_dev`)
-运行以下命令读取中转网站（若配置了环境变量 `HACKATHON_HUB_URL` 或传入 `--site-url`）及本地仓库中的待开发比赛：
+## Step 1: 通过 Git CAS 原子抢单锁定下一个待开发任务 (`claim`)
+运行以下命令通过远端 Git 原子推送抢占下一个 `pending_dev`（或已超时的僵尸 `in_progress`）任务：
 
 ```bash
-python scripts/sync_and_queue.py list --status pending_dev --pull
+python scripts/sync_and_queue.py claim --json
 ```
 
-- 如果输出为空（队列中没有任何 `pending_dev` 任务），说明当前无积压比赛，直接向用户汇报“队列为空，无需开发”并结束任务。
-- 如果存在多个 `pending_dev` 任务（例如周末积压了多场比赛），按顺序逐个处理。
+- 该命令会自动 `git pull --rebase`、将目标任务标记为 `in_progress` 并附上当前节点 `claimed_by` 与 `claimed_at`，再立即 `git push origin main` 完成分布式锁定。
+- 若返回 `null`，说明当前队列为空或均已被其他节点（如 EC2 CLI）领取锁定，直接向用户汇报“队列为空或已被其他节点接管”并结束任务。
+- 若多台机器（本地 + EC2）同时抢到同一任务，推送失败方会自动回滚并改抢下一个任务，**绝不会重复开发同一个比赛**。
+- 开发完一个任务后，可循环再次调用 `claim --json` 领取下一个积压任务，直到返回 `null` 为止。
 
-## Step 2: 精读 Spec & Plan 并标记为 `in_progress`
-针对每个待开发比赛 `<slug>`：
-1. 查看完整元信息：
+## Step 2: 精读已抢占任务的 Spec & Plan
+针对上一步抢到的比赛 `<slug>`：
+1. 查看完整元信息（可选）：
    ```bash
    python scripts/sync_and_queue.py get --slug <slug>
    ```
 2. 完整阅读对应的设计文档：
    - `site/data/specs/<slug>/spec.md`
    - `site/data/specs/<slug>/plan.md`
-3. 标记状态为开发中：
-   ```bash
-   python scripts/sync_and_queue.py mark --slug <slug> --status in_progress
-   ```
 
 ## Step 3: 生成全栈脚手架并实现完整业务代码
 1. 初始化项目骨架：

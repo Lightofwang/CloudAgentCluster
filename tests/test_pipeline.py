@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timedelta
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -15,10 +16,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
-from ingest_spec import expected_passcode_hash, ingest_entry, parse_issue_markdown  # noqa: E402
+from ingest_spec import TZ_CN, expected_passcode_hash, ingest_entry, parse_issue_markdown  # noqa: E402
 from publish_project import publish_project  # noqa: E402
 from scaffold_fullstack import scaffold_project  # noqa: E402
-from sync_and_queue import _is_owner_trusted, mark_status, sync_from_site_url  # noqa: E402
+from sync_and_queue import _is_owner_trusted, claim_next_task, mark_status, sync_from_site_url  # noqa: E402
 
 
 class QuietHTTPHandler(SimpleHTTPRequestHandler):
@@ -310,6 +311,107 @@ Web3, AI Agent
         )
         self.assertEqual(count, 1)
         self.assertIn(expected_digest, updated)
+
+    def test_07_distributed_atomic_claim_and_lease_expiry(self):
+        """模拟本地 App 与 EC2 CLI 通过远端 Bare Git 仓库并发 CAS 抢单与租约超时回收。"""
+        bare_dir = self.tmp_root / "remote_origin.git"
+        seed_dir = self.tmp_root / "seed_repo"
+        node_local = self.tmp_root / "node_local"
+        node_ec2 = self.tmp_root / "node_ec2"
+
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(bare_dir)], check=True, capture_output=True)
+        subprocess.run(["git", "clone", str(bare_dir), str(seed_dir)], check=True, capture_output=True)
+        for repo in (seed_dir,):
+            subprocess.run(["git", "-C", str(repo), "checkout", "-B", "main"], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.name", "Tester"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.email", "tester@example.com"], check=True)
+
+        stale_time = (datetime.now(TZ_CN) - timedelta(hours=3)).replace(microsecond=0).isoformat()
+        for slug, status, claimed_at in [
+            ("task-alpha", "pending_dev", ""),
+            ("task-beta", "pending_dev", ""),
+            ("task-stale", "in_progress", stale_time),
+        ]:
+            spec_dir = seed_dir / "site" / "data" / "specs" / slug
+            spec_dir.mkdir(parents=True, exist_ok=True)
+            (spec_dir / "spec.md").write_text(f"# Spec {slug}\n", encoding="utf-8")
+            (spec_dir / "plan.md").write_text(f"# Plan {slug}\n", encoding="utf-8")
+            (spec_dir / "meta.json").write_text(
+                json.dumps({"slug": slug, "status": status}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+        index_payload = {
+            "updated_at": "2026-11-16T16:00:00+08:00",
+            "site_config": {"github_owner": "Lightofwang", "github_repo": "CloudAgentCluster", "default_branch": "main"},
+            "hackathons": [
+                {
+                    "id": "task-alpha",
+                    "slug": "task-alpha",
+                    "title": "Alpha Hackathon",
+                    "platform": "devpost",
+                    "status": "pending_dev",
+                    "submitted_by": "Lightofwang",
+                },
+                {
+                    "id": "task-beta",
+                    "slug": "task-beta",
+                    "title": "Beta Hackathon",
+                    "platform": "lablab",
+                    "status": "pending_dev",
+                    "submitted_by": "Lightofwang",
+                },
+                {
+                    "id": "task-stale",
+                    "slug": "task-stale",
+                    "title": "Stale Zombie Task",
+                    "platform": "dorahacks",
+                    "status": "in_progress",
+                    "claimed_by": "crashed-node",
+                    "claimed_at": stale_time,
+                    "submitted_by": "Lightofwang",
+                },
+            ],
+        }
+        (seed_dir / "site" / "data" / "hackathons.json").write_text(
+            json.dumps(index_payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "-C", str(seed_dir), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(seed_dir), "commit", "-m", "seed queue"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(seed_dir), "push", "-u", "origin", "main"], check=True, capture_output=True)
+
+        # 两个独立工作区同时克隆（模拟本地 Antigravity App 和 EC2 CLI）
+        for workdir, name in ((node_local, "local-app"), (node_ec2, "ec2-cli")):
+            subprocess.run(["git", "clone", str(bare_dir), str(workdir)], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(workdir), "config", "user.name", name], check=True)
+            subprocess.run(["git", "-C", str(workdir), "config", "user.email", f"{name}@example.com"], check=True)
+
+        # 1. 本地 App 先抢到 task-alpha 并推送至 origin/main
+        claimed_local = claim_next_task(node_local, worker_id="local-app")
+        self.assertIsNotNone(claimed_local)
+        self.assertEqual(claimed_local["slug"], "task-alpha")
+        self.assertEqual(claimed_local["claimed_by"], "local-app")
+
+        # 2. EC2 CLI 在持有旧视图的情况下同时发起抢单，冲突回滚并自动 pull 后改抢 task-beta
+        claimed_ec2 = claim_next_task(node_ec2, worker_id="ec2-cli")
+        self.assertIsNotNone(claimed_ec2)
+        self.assertEqual(claimed_ec2["slug"], "task-beta")
+        self.assertEqual(claimed_ec2["claimed_by"], "ec2-cli")
+
+        # 3. 租约未过期时不回收 task-stale
+        not_expired = claim_next_task(node_local, worker_id="local-app", lease_minutes=300)
+        self.assertIsNone(not_expired)
+
+        # 4. 租约已超过 120 分钟后，EC2 CLI 自动接管僵尸任务 task-stale
+        reclaimed = claim_next_task(node_ec2, worker_id="ec2-cli", lease_minutes=120)
+        self.assertIsNotNone(reclaimed)
+        self.assertEqual(reclaimed["slug"], "task-stale")
+        self.assertEqual(reclaimed["claimed_by"], "ec2-cli")
+
+        # 5. 所有任务均已被占用且未过期时，再抢返回 None（绝不冲突重复领取）
+        none_left = claim_next_task(node_local, worker_id="local-app", lease_minutes=120)
+        self.assertIsNone(none_left)
 
 
 if __name__ == "__main__":

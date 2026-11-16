@@ -1,0 +1,24 @@
+{
+  "id": "demo-ai-agent-copilot",
+  "slug": "demo-ai-agent-copilot",
+  "title": "Devpost Global AI Agent Hackathon: Pitch & Architecture Copilot",
+  "platform": "devpost",
+  "source_url": "https://devpost.com/hackathons",
+  "deadline": "2026-12-15T23:59:00Z",
+  "prize_pool": "$50,000",
+  "tags": [
+    "AI Agent",
+    "Full-Stack",
+    "Developer Tools"
+  ],
+  "match_score": 96,
+  "status": "completed",
+  "spec_path": "data/specs/demo-ai-agent-copilot/spec.md",
+  "plan_path": "data/specs/demo-ai-agent-copilot/plan.md",
+  "project_type": "fullstack-web",
+  "summary": "面向极客马拉松选手的实时项目架构评估与路演提纲生成全栈应用。",
+  "repo_url": "https://github.com/Lightofwang/CloudAgentCluster/tree/main/projects/demo-ai-agent-copilot",
+  "fallback_path": "projects/demo-ai-agent-copilot",
+  "created_at": "2026-11-16T10:00:00+08:00",
+  "completed_at": "2026-11-16T11:04:19+08:00"
+}

@@ -1,0 +1,83 @@
+name: 提交 Hackathon Spec & Plan
+description: 由 Muse AI 或人工提交新监控到的 Hackathon 规范与实施计划，自动发布到中转网站队列。
+title: "[Hackathon Spec] "
+labels: ["hackathon-spec"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交后 GitHub Actions 将自动运行纯 Python 脚本（零模型 API 消耗）把 Spec/Plan 写入网站，供 Antigravity 定时读取并开发代码。
+  - type: input
+    id: title
+    attributes:
+      label: 比赛名称 (Title)
+      placeholder: "例如：Devpost Global AI Agents Hackathon 2026"
+    validations:
+      required: true
+  - type: input
+    id: slug
+    attributes:
+      label: 唯一标识 (Slug)
+      placeholder: "留空将自动生成，例如 devpost-ai-agents-2026"
+    validations:
+      required: false
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 所属平台 (Platform)
+      options:
+        - devpost
+        - lablab
+        - dorahacks
+        - other
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: source_url
+    attributes:
+      label: 比赛链接 (Source URL)
+      placeholder: "https://devpost.com/hackathons/..."
+    validations:
+      required: true
+  - type: input
+    id: deadline
+    attributes:
+      label: 截止日期 (Deadline)
+      placeholder: "2026-12-20T23:59:00Z"
+  - type: input
+    id: prize_pool
+    attributes:
+      label: 奖金池 (Prize Pool)
+      placeholder: "$25,000"
+  - type: input
+    id: match_score
+    attributes:
+      label: 匹配度评分 (1-100)
+      placeholder: "92"
+  - type: input
+    id: tags
+    attributes:
+      label: 标签 (Tags)
+      placeholder: "AI Agent, Full-Stack, Web"
+  - type: input
+    id: summary
+    attributes:
+      label: 一句话简介 (Summary)
+      placeholder: "简述该项目的核心创新点与应用场景"
+  - type: textarea
+    id: spec
+    attributes:
+      label: Spec 设计文档 (spec.md)
+      description: 粘贴完整的功能规范、API 契约与界面需求
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plan 实施计划 (plan.md)
+      description: 粘贴分阶段开发计划与测试验证方案
+      render: markdown
+    validations:
+      required: true

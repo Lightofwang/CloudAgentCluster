@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CloudAgentCluster Hub — Hackathon Spec & 自动研发看板</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-badge">CA</div>
+        <div>
+          <div class="brand-title">CloudAgentCluster Hub</div>
+          <div class="brand-sub">Muse AI 云端监控 · Spec/Plan 队列 · Antigravity 自动开发推库</div>
+        </div>
+      </div>
+      <nav class="nav-actions">
+        <a href="index.html" class="btn btn-primary btn-sm">任务看板</a>
+        <a href="submit.html" class="btn btn-sm">+ 提交 Spec / Plan (Muse AI)</a>
+        <a id="nav-repo-link" href="https://github.com/Lightofwang/CloudAgentCluster" target="_blank" rel="noopener" class="btn btn-sm">GitHub 仓库</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero-banner">
+      <div>
+        <h1>Hackathon 全自动研发中转站</h1>
+        <p>Muse AI 在云端 7×24h 监控 Devpost / Lablab.ai / DoraHacks 并提交设计规范，Antigravity 定时读取 <code>data/hackathons.json</code> 自动开发全栈项目并推送到 GitHub。</p>
+      </div>
+      <div class="nav-actions">
+        <button id="btn-refresh" class="btn btn-sm">刷新队列</button>
+        <a href="data/hackathons.json" target="_blank" class="btn btn-sm">查看 JSON API</a>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">总监控 Hackathon</div>
+        <div id="stat-total" class="stat-value">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Dev (待开发队列)</div>
+        <div id="stat-pending" class="stat-value stat-pending">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">In Progress (开发中)</div>
+        <div id="stat-progress" class="stat-value stat-progress">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Completed (已推送 GitHub)</div>
+        <div id="stat-completed" class="stat-value stat-completed">0</div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="filter-group">
+        <select id="filter-platform" aria-label="按平台筛选">
+          <option value="all">全部平台</option>
+          <option value="devpost">Devpost</option>
+          <option value="lablab">Lablab.ai</option>
+          <option value="dorahacks">DoraHacks</option>
+          <option value="other">其他</option>
+        </select>
+        <select id="filter-status" aria-label="按状态筛选">
+          <option value="all">全部状态</option>
+          <option value="pending_dev">Pending Dev (待开发)</option>
+          <option value="in_progress">In Progress (开发中)</option>
+          <option value="completed">Completed (已完成)</option>
+          <option value="failed">Failed (异常)</option>
+        </select>
+        <input id="filter-search" class="input" type="search" placeholder="搜索比赛名称、标签或 Slug..." />
+      </div>
+      <div class="brand-sub">
+        最近更新：<span id="last-updated">-</span>
+      </div>
+    </section>
+
+    <section id="cards-container" class="cards-grid"></section>
+  </main>
+
+  <!-- Spec & Plan 预览模态框 -->
+  <div id="spec-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-title" style="font-size:18px;">比赛详情</h2>
+          <div id="modal-subtitle" class="brand-sub"></div>
+        </div>
+        <button id="btn-close-modal" class="btn btn-sm">关闭 ✕</button>
+      </div>
+      <div class="modal-tabs">
+        <div class="tab-buttons">
+          <button id="tab-spec" class="btn btn-sm tab-btn active">Spec 设计规范</button>
+          <button id="tab-plan" class="btn btn-sm tab-btn">Plan 实施计划</button>
+          <button id="tab-trigger" class="btn btn-sm tab-btn">一键触发 / 重新开发</button>
+        </div>
+        <div class="tab-buttons">
+          <button id="btn-toggle-raw" class="btn btn-sm">切换原文</button>
+          <a id="link-raw-file" href="#" target="_blank" class="btn btn-sm">打开原始文件 ↗</a>
+        </div>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pitch & Architecture Copilot — Devpost Global AI Agent Hackathon</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Pitch & Architecture Copilot</h1>
+      <p>Devpost Global AI Agent Hackathon 参赛作品 · 实时架构评估与 3 分钟路演提纲生成器</p>
+    </div>
+    <button id="btn-sample" class="btn btn-secondary" type="button">填充示例参赛方案</button>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>1. 录入参赛项目参数</h2>
+      <form id="analyze-form">
+        <div class="field">
+          <label for="project-name">项目名称 *</label>
+          <input id="project-name" type="text" required placeholder="例如：CloudAgentCluster" />
+        </div>
+        <div class="field">
+          <label for="track-select">目标赛道</label>
+          <select id="track-select"></select>
+        </div>
+        <div class="field">
+          <label for="team-size">团队人数 (1-6)</label>
+          <input id="team-size" type="number" min="1" max="6" value="2" />
+        </div>
+        <div class="field">
+          <label for="tech-stack">技术栈（逗号分隔）</label>
+          <input id="tech-stack" type="text" placeholder="Python, HTML5, AI Agent, Unittest" />
+        </div>
+        <div class="field">
+          <label for="problem-statement">核心解决痛点 *</label>
+          <textarea id="problem-statement" rows="4" required placeholder="描述该方案解决的关键痛点与目标用户价值..."></textarea>
+        </div>
+        <button id="btn-analyze" class="btn btn-primary" type="submit">生成评分、架构与路演提纲</button>
+      </form>
+      <div id="error-box" class="error-box" style="display:none;"></div>
+    </section>
+
+    <section class="panel">
+      <div class="result-header">
+        <h2>2. 实时评估与输出工作台</h2>
+        <button id="btn-copy-pitch" class="btn btn-secondary" type="button" style="display:none;">复制 Pitch 提纲</button>
+      </div>
+
+      <div id="empty-hint" class="empty-hint">
+        请在左侧输入参赛项目信息（或点击右上角“填充示例参赛方案”），实时获取 Hackathon 竞争力评分、架构清单与 6 段式路演提纲。
+      </div>
+
+      <div id="result-view" style="display:none;">
+        <div class="score-hero">
+          <div>
+            <div class="muted">综合推荐指数</div>
+            <div id="overall-score" class="big-score">0</div>
+          </div>
+          <div id="track-badge" class="badge">AI Agents</div>
+        </div>
+
+        <div id="dimensions-grid" class="dimensions-grid"></div>
+
+        <h3>推荐系统架构模块</h3>
+        <div id="arch-list" class="arch-list"></div>
+
+        <h3>落地风控与优化提示</h3>
+        <ul id="risk-list" class="risk-list"></ul>
+
+        <h3>3 分钟 Pitch Deck 路演提纲</h3>
+        <div id="pitch-list" class="pitch-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# Environment & Secrets
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+
+# OS & Editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Cache & Temp
+.cache/
+tmp/

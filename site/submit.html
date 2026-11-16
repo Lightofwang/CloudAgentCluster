@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>提交 Spec & Plan — CloudAgentCluster Hub</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-badge">CA</div>
+        <div>
+          <div class="brand-title">CloudAgentCluster Hub</div>
+          <div class="brand-sub">Muse AI 专用无障碍 Spec / Plan 提交工作台</div>
+        </div>
+      </div>
+      <nav class="nav-actions">
+        <a href="index.html" class="btn btn-sm">← 返回任务看板</a>
+        <button id="btn-fill-sample" type="button" class="btn btn-sm">填充示例模板</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="notice">
+      <strong>Muse AI / 人工提交通道说明：</strong> 本页面字段使用固定语义化 ID，支持 <strong>零付费模型 API</strong> 自动入库。填写完毕后点击「通过 GitHub Issue 一键提交（免 Token）」，GitHub Actions 将自动解析并发布到看板供 Antigravity 定时读取开发。
+    </div>
+
+    <form id="spec-submit-form" class="form-panel">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="hackathon-title">比赛名称 (Title) *</label>
+          <input id="hackathon-title" name="title" class="input" type="text" required placeholder="例如：Lablab.ai Autonomous Agents Hackathon 2026" />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-slug">唯一标识 (Slug)</label>
+          <input id="hackathon-slug" name="slug" class="input" type="text" placeholder="留空将根据标题自动生成，例如 lablab-agents-2026" />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-platform">所属平台 (Platform) *</label>
+          <select id="hackathon-platform" name="platform">
+            <option value="devpost">devpost</option>
+            <option value="lablab">lablab</option>
+            <option value="dorahacks">dorahacks</option>
+            <option value="other">other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="hackathon-url">比赛原始网址 (Source URL) *</label>
+          <input id="hackathon-url" name="source_url" class="input" type="url" required placeholder="https://devpost.com/hackathons/..." />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-deadline">截止日期 (Deadline)</label>
+          <input id="hackathon-deadline" name="deadline" class="input" type="text" placeholder="2026-12-20T23:59:00Z" />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-prize">奖金池 (Prize Pool)</label>
+          <input id="hackathon-prize" name="prize_pool" class="input" type="text" placeholder="$25,000" />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-score">匹配度评分 (1-100)</label>
+          <input id="hackathon-score" name="match_score" class="input" type="number" min="1" max="100" value="90" />
+        </div>
+        <div class="form-field">
+          <label for="hackathon-tags">标签 (逗号分隔)</label>
+          <input id="hackathon-tags" name="tags" class="input" type="text" placeholder="AI Agent, Full-Stack, Web" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="hackathon-summary">一句话简介 (Summary)</label>
+        <input id="hackathon-summary" name="summary" class="input" type="text" placeholder="简述参赛创意与核心价值" />
+      </div>
+
+      <div class="form-field">
+        <label for="spec-content">Spec 设计文档 (spec.md Markdown 内容) *</label>
+        <textarea id="spec-content" name="spec_content" rows="12" required placeholder="# Spec: ...&#10;&#10;## 1. 背景与目标&#10;## 2. 核心功能与 API 接口&#10;## 3. 前端交互设计"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="plan-content">Plan 实施计划 (plan.md Markdown 内容) *</label>
+        <textarea id="plan-content" name="plan_content" rows="10" required placeholder="# Plan: ...&#10;&#10;## Phase 1: 后端 API&#10;## Phase 2: 前端界面&#10;## Phase 3: 测试验证"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="github-token">可选：GitHub Personal Access Token (仅保存在本地浏览器，用于 API 直写 Issue)</label>
+        <input id="github-token" name="github_token" class="input" type="password" placeholder="ghp_... (留空即可使用免 Token 跳转 Issue 提交)" />
+      </div>
+
+      <div class="form-actions">
+        <button id="btn-submit-issue" type="button" class="btn btn-primary">通过 GitHub Issue 一键提交（免 Token）</button>
+        <button id="btn-submit-api" type="button" class="btn btn-success">通过 GitHub API 直接提交 Issue</button>
+        <button id="btn-download-json" type="button" class="btn">导出标准 JSON 数据包</button>
+        <button id="btn-copy-markdown" type="button" class="btn">复制 Issue 格式 Markdown</button>
+      </div>
+    </form>
+
+    <section id="payload-preview-box" class="form-panel" style="margin-top:20px; display:none;">
+      <h3 style="margin-bottom:8px;">已生成的结构化 Issue Markdown（若超长可复制粘贴到 GitHub Issue）</h3>
+      <pre id="payload-preview" class="raw-pre"></pre>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

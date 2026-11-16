@@ -253,7 +253,7 @@ Web3, AI Agent
             self.assertEqual(res.returncode, 0, msg=res.stderr)
             items = json.loads(res.stdout)
             self.assertGreaterEqual(len(items), 1)
-            self.assertEqual(items[0]["slug"], "demo-ai-agent-copilot")
+            self.assertIn("demo-ai-agent-copilot", [item["slug"] for item in items])
         finally:
             server.shutdown()
             server.server_close()

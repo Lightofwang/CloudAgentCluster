@@ -21,9 +21,21 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from ingest_spec import load_hackathons_index, now_iso, save_hackathons_index, slugify  # noqa: E402
+from ingest_spec import (  # noqa: E402
+    DEFAULT_ALLOWED_OWNER,
+    load_hackathons_index,
+    now_iso,
+    save_hackathons_index,
+    slugify,
+)
 
 VALID_STATUSES = {"pending_dev", "in_progress", "completed", "failed"}
+
+
+def _is_owner_trusted(entry: dict[str, Any]) -> bool:
+    allowed = os.environ.get("HUB_ALLOWED_OWNER", "").strip() or DEFAULT_ALLOWED_OWNER
+    submitted_by = str(entry.get("submitted_by") or allowed).strip()
+    return submitted_by.lower() == allowed.lower()
 
 
 def _http_get_text(url: str, timeout: int = 15) -> str:
@@ -77,6 +89,9 @@ def sync_from_site_url(site_url: str, root_dir: Path, target_slug: str | None = 
     for item in remote_index.get("hackathons", []):
         slug = item.get("slug")
         if not slug:
+            continue
+        if not _is_owner_trusted(item):
+            print(f"[warn] 忽略非本人提交的条目: {slug} (submitted_by={item.get('submitted_by')})", file=sys.stderr)
             continue
         seen_slugs.add(slug)
 
@@ -206,7 +221,7 @@ def main() -> int:
 
     if args.command == "list":
         index_data = resolve_index(root_dir, args.site_url or None, args.pull)
-        items = index_data.get("hackathons", [])
+        items = [h for h in index_data.get("hackathons", []) if _is_owner_trusted(h)]
         if args.status:
             items = [h for h in items if h.get("status") == args.status]
         enriched = [attach_local_paths(h, root_dir) for h in items]

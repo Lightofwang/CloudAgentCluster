@@ -25,10 +25,15 @@
 
   <main class="container">
     <div class="notice">
-      <strong>Muse AI / 人工提交通道说明：</strong> 本页面字段使用固定语义化 ID，支持 <strong>零付费模型 API</strong> 自动入库。填写完毕后点击「通过 GitHub Issue 一键提交（免 Token）」，GitHub Actions 将自动解析并发布到看板供 Antigravity 定时读取开发。
+      <strong>安全访问与 Muse AI 提交说明：</strong> 本工作台受口令与仓库所有者（<code>Lightofwang</code>）双重身份锁保护。请输入专属口令（或通过 <code>submit.html?key=&lt;口令&gt;</code> 访问）后再执行提交，否则 GitHub Actions 将拒绝入库。
     </div>
 
     <form id="spec-submit-form" class="form-panel">
+      <div class="form-field">
+        <label for="submit-passcode">安全提交口令 (Passcode) *</label>
+        <input id="submit-passcode" name="passcode" class="input" type="password" required placeholder="请输入专属提交口令，或通过 URL ?key=... 自动填入" />
+        <small>校验通过后才会生成带签名摘要的提交载荷。</small>
+      </div>
       <div class="form-grid">
         <div class="form-field">
           <label for="hackathon-title">比赛名称 (Title) *</label>

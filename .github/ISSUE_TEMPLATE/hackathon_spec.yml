@@ -6,7 +6,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        提交后 GitHub Actions 将自动运行纯 Python 脚本（零模型 API 消耗）把 Spec/Plan 写入网站，供 Antigravity 定时读取并开发代码。
+        提交后 GitHub Actions 将自动校验提交者身份与口令（仅限仓库所有者），随后通过纯 Python 脚本（零模型 API 消耗）写入网站队列。
+  - type: input
+    id: passcode
+    attributes:
+      label: 安全提交口令 (Passcode)
+      description: 仅限本人使用的安全验证口令，错误口令将被 GitHub Actions 自动拒绝
+      placeholder: "请输入专属提交口令"
+    validations:
+      required: true
   - type: input
     id: title
     attributes:

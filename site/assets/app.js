@@ -15,6 +15,68 @@
     planCache: {},
   };
 
+  const EXPECTED_PASSCODE_HASH =
+    "c1b8f50a7b3d9cba1dfaee80fa2131a8f6d40f2ccecf2323d4f33845054c02f4";
+
+  // 纯 JS SHA-256 实现，兼容 HTTPS、localhost 及 file:// 环境
+  function sha256Hex(str) {
+    const utf8 = unescape(encodeURIComponent(str));
+    const words = [];
+    for (let i = 0; i < utf8.length; i++) {
+      words[i >> 2] |= (utf8.charCodeAt(i) & 0xff) << (24 - (i % 4) * 8);
+    }
+    const bitLen = utf8.length * 8;
+    words[bitLen >> 5] |= 0x80 << (24 - (bitLen % 32));
+    words[(((bitLen + 64) >> 9) << 4) + 15] = bitLen;
+
+    const K = [
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    ];
+    let H = [
+      0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+      0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+    ];
+    const rotr = (n, x) => (x >>> n) | (x << (32 - n));
+    const add = (a, b) => (a + b) | 0;
+
+    for (let i = 0; i < words.length; i += 16) {
+      const W = new Array(64);
+      for (let t = 0; t < 16; t++) W[t] = words[i + t] | 0;
+      for (let t = 16; t < 64; t++) {
+        const s0 = rotr(7, W[t - 15]) ^ rotr(18, W[t - 15]) ^ (W[t - 15] >>> 3);
+        const s1 = rotr(17, W[t - 2]) ^ rotr(19, W[t - 2]) ^ (W[t - 2] >>> 10);
+        W[t] = add(add(W[t - 16], s0), add(W[t - 7], s1));
+      }
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let t = 0; t < 64; t++) {
+        const S1 = rotr(6, e) ^ rotr(11, e) ^ rotr(25, e);
+        const ch = (e & f) ^ (~e & g);
+        const temp1 = add(add(add(h, S1), add(ch, K[t])), W[t]);
+        const S0 = rotr(2, a) ^ rotr(13, a) ^ rotr(22, a);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const temp2 = add(S0, maj);
+        h = g; g = f; f = e; e = add(d, temp1);
+        d = c; c = b; b = a; a = add(temp1, temp2);
+      }
+      H = [add(H[0], a), add(H[1], b), add(H[2], c), add(H[3], d), add(H[4], e), add(H[5], f), add(H[6], g), add(H[7], h)];
+    }
+    return H.map((x) => (x >>> 0).toString(16).padStart(8, "0")).join("");
+  }
+
+  function verifyPasscodeInput(rawCode) {
+    const code = String(rawCode || "").trim();
+    if (!code) return null;
+    const digest = sha256Hex(code);
+    return digest === EXPECTED_PASSCODE_HASH ? digest : null;
+  }
+
   function showToast(msg) {
     const toast = document.getElementById("toast");
     if (!toast) return;
@@ -270,10 +332,6 @@
       toggleRawBtn.style.display = "none";
       const owner = state.config.github_owner;
       const repo = state.config.github_repo;
-      const triggerBody = encodeURIComponent(
-        `<!--TRIGGER_DEV_START-->\n{"reset_slug": "${item.slug}"}\n<!--TRIGGER_DEV_END-->\n\n请重置比赛 \`${item.slug}\` 为 \`pending_dev\` 状态以重新执行 Antigravity 自动开发。`
-      );
-      const issueUrl = `https://github.com/${owner}/${repo}/issues/new?labels=trigger-dev&title=${encodeURIComponent("[Trigger Dev] " + item.slug)}&body=${triggerBody}`;
       const localCmd = `python scripts/sync_and_queue.py get --slug ${item.slug}`;
       const devCmd = `python scripts/ingest_spec.py --reset-slug ${item.slug}`;
 
@@ -282,9 +340,9 @@
           <strong>双模式触发说明：</strong> 当你点击云端重置后，状态会变回 <code>pending_dev</code>，下次 Antigravity 每日定时任务（10:00 / 20:00）启动时会自动拉取并开发；如果你当前就在电脑旁，可以直接复制下方命令让本地 Antigravity 立即开发。
         </div>
         <div class="card" style="margin-bottom:14px;">
-          <h4>方式 1：通过 GitHub Actions 云端重置并重新排队</h4>
-          <p class="card-summary">打开预填充的 GitHub Issue 页面并提交，GitHub Actions 将自动把状态重置为 <code>pending_dev</code>。</p>
-          <div><a href="${issueUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">前往 GitHub 触发云端重新排队 ↗</a></div>
+          <h4>方式 1：通过 GitHub Actions 云端重置并重新排队（需管理员口令）</h4>
+          <p class="card-summary">验证口令后打开预填充的 GitHub Issue 页面并提交，GitHub Actions 将自动把状态重置为 <code>pending_dev</code>。</p>
+          <div><button id="btn-trigger-cloud" type="button" class="btn btn-primary btn-sm">前往 GitHub 触发云端重新排队 ↗</button></div>
         </div>
         <div class="card">
           <h4>方式 2：本地命令行读取 / 重置</h4>
@@ -295,6 +353,20 @@
           <div><button id="btn-copy-trigger-cmd" class="btn btn-sm">复制本地开发指令</button></div>
         </div>
       `;
+      document.getElementById("btn-trigger-cloud")?.addEventListener("click", () => {
+        const code = window.prompt("请输入管理员提交口令以生成云端重新排队指令：");
+        if (code === null) return;
+        const digest = verifyPasscodeInput(code);
+        if (!digest) {
+          showToast("口令错误：未授权操作");
+          return;
+        }
+        const triggerBody = encodeURIComponent(
+          `<!--TRIGGER_DEV_START-->\n${JSON.stringify({ reset_slug: item.slug, auth_hash: digest })}\n<!--TRIGGER_DEV_END-->\n\n请重置比赛 \`${item.slug}\` 为 \`pending_dev\` 状态以重新执行 Antigravity 自动开发。`
+        );
+        const issueUrl = `https://github.com/${owner}/${repo}/issues/new?labels=trigger-dev&title=${encodeURIComponent("[Trigger Dev] " + item.slug)}&body=${triggerBody}`;
+        window.open(issueUrl, "_blank", "noopener");
+      });
       document.getElementById("btn-copy-trigger-cmd")?.addEventListener("click", () => {
         navigator.clipboard?.writeText(localCmd);
         showToast("已复制本地读取指令");
@@ -348,6 +420,16 @@
       });
     });
 
+    document.getElementById("btn-admin-entry")?.addEventListener("click", () => {
+      const code = window.prompt("请输入管理员提交口令（用于解锁 Spec/Plan 提交工作台）：");
+      if (code === null) return;
+      if (verifyPasscodeInput(code)) {
+        window.location.href = `submit.html?key=${encodeURIComponent(code.trim())}`;
+      } else {
+        showToast("口令错误：仅限仓库管理员进入提交工作台");
+      }
+    });
+
     document.getElementById("btn-toggle-raw")?.addEventListener("click", () => {
       state.showRaw = !state.showRaw;
       renderModalContent();
@@ -355,6 +437,7 @@
   }
 
   function collectFormPayload() {
+    const passcode = (document.getElementById("submit-passcode")?.value || "").trim();
     const title = document.getElementById("hackathon-title").value.trim();
     const rawSlug = document.getElementById("hackathon-slug").value.trim();
     const slug = rawSlug ? slugify(rawSlug) : slugify(title);
@@ -372,6 +455,9 @@
     const plan_content = document.getElementById("plan-content").value.trim();
 
     return {
+      passcode,
+      auth_hash: passcode ? sha256Hex(passcode) : "",
+      submitted_by: state.config.github_owner || "Lightofwang",
       slug,
       title,
       platform,
@@ -399,6 +485,8 @@
       tags: payload.tags,
       summary: payload.summary,
       project_type: payload.project_type,
+      submitted_by: payload.submitted_by,
+      auth_hash: payload.auth_hash,
     };
 
     return [
@@ -421,6 +509,10 @@
   }
 
   function validatePayload(payload) {
+    if (!verifyPasscodeInput(payload.passcode)) {
+      showToast("未授权：提交口令不正确，已阻止生成提交载荷");
+      return false;
+    }
     if (!payload.title || !payload.spec_content || !payload.plan_content) {
       showToast("请至少填写：比赛名称、Spec 设计文档和 Plan 实施计划");
       return false;
@@ -433,6 +525,13 @@
     if (!form) return;
 
     loadConfigAndData();
+
+    const params = new URLSearchParams(window.location.search);
+    const keyParam = (params.get("key") || "").trim();
+    const passcodeInput = document.getElementById("submit-passcode");
+    if (passcodeInput && keyParam) {
+      passcodeInput.value = keyParam;
+    }
 
     const tokenInput = document.getElementById("github-token");
     const savedToken = localStorage.getItem("cloudagentcluster_gh_token");
@@ -524,7 +623,9 @@
     document.getElementById("btn-download-json")?.addEventListener("click", () => {
       const payload = collectFormPayload();
       if (!validatePayload(payload)) return;
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const exportPayload = Object.assign({}, payload);
+      delete exportPayload.passcode;
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json;charset=utf-8" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${payload.slug}.json`;

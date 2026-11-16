@@ -24,12 +24,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  reject-unauthorized:
+    if: >
+      github.event_name == 'issues' &&
+      github.event.issue.user.login != 'Lightofwang' &&
+      (contains(github.event.issue.labels.*.name, 'hackathon-spec') ||
+       contains(github.event.issue.labels.*.name, 'trigger-dev'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close unauthorized issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "⛔ 已拦截：此自动化入库通道仅限仓库所有者 (`Lightofwang`) 提交。外部访客请 Fork 本仓库后自行部署使用。"
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: "closed"
+            });
+
   ingest:
     if: >
-      (github.event_name == 'issues' &&
-       (contains(github.event.issue.labels.*.name, 'hackathon-spec') ||
-        contains(github.event.issue.labels.*.name, 'trigger-dev'))) ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.reset_slug != '')
+      github.actor == 'Lightofwang' &&
+      (
+        (github.event_name == 'issues' &&
+         github.event.issue.user.login == 'Lightofwang' &&
+         (contains(github.event.issue.labels.*.name, 'hackathon-spec') ||
+          contains(github.event.issue.labels.*.name, 'trigger-dev'))) ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.reset_slug != '')
+      )
     runs-on: ubuntu-latest
     outputs:
       slug: ${{ steps.run_ingest.outputs.slug }}
@@ -49,21 +78,26 @@ jobs:
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+          GITHUB_ACTOR_NAME: ${{ github.actor }}
+          HUB_PASSCODE: ${{ secrets.HUB_PASSCODE }}
           RESET_SLUG: ${{ github.event.inputs.reset_slug }}
         run: |
           python3 - <<'PY'
           import json, os, subprocess
           from pathlib import Path
 
+          actor = os.environ.get("GITHUB_ACTOR_NAME", "").strip()
           reset_slug = os.environ.get("RESET_SLUG", "").strip()
           if reset_slug:
               res = subprocess.check_output(
-                  ["python3", "scripts/ingest_spec.py", "--reset-slug", reset_slug],
+                  ["python3", "scripts/ingest_spec.py", "--reset-slug", reset_slug, "--actor", actor],
                   text=True,
               )
           else:
               body_file = Path("/tmp/issue_body.md")
               body_file.write_text(os.environ.get("ISSUE_BODY", ""), encoding="utf-8")
+              issue_user = os.environ.get("ISSUE_USER", "").strip() or actor
               res = subprocess.check_output(
                   [
                       "python3",
@@ -72,6 +106,9 @@ jobs:
                       str(body_file),
                       "--issue-title",
                       os.environ.get("ISSUE_TITLE", ""),
+                      "--actor",
+                      issue_user,
+                      "--require-auth",
                   ],
                   text=True,
               )

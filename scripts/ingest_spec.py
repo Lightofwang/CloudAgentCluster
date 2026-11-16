@@ -7,7 +7,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone, timedelta
@@ -15,6 +18,37 @@ from pathlib import Path
 from typing import Any
 
 TZ_CN = timezone(timedelta(hours=8))
+DEFAULT_ALLOWED_OWNER = "Lightofwang"
+DEFAULT_PASSCODE = "MUSE-LIGHT-2026"
+
+
+def expected_passcode_hash() -> str:
+    secret = os.environ.get("HUB_PASSCODE", "").strip() or DEFAULT_PASSCODE
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+
+
+def verify_submission_auth(
+    payload: dict[str, Any],
+    actor: str | None = None,
+    require_auth: bool = False,
+    allowed_owner: str | None = None,
+) -> None:
+    """校验提交者身份及提交口令哈希，防止未授权外部提交。"""
+    owner = (allowed_owner or os.environ.get("HUB_ALLOWED_OWNER", "") or DEFAULT_ALLOWED_OWNER).strip()
+    if actor is not None and actor.strip().lower() != owner.lower():
+        raise PermissionError(f"拒绝入库：仅允许仓库所有者 {owner} 提交（当前提交者：{actor}）")
+
+    if not require_auth:
+        return
+
+    exp_hash = expected_passcode_hash()
+    raw_passcode = str(payload.get("passcode", "")).strip()
+    provided_hash = str(payload.get("auth_hash", "")).strip().lower()
+    if raw_passcode:
+        provided_hash = hashlib.sha256(raw_passcode.encode("utf-8")).hexdigest()
+
+    if not provided_hash or not hmac.compare_digest(provided_hash, exp_hash):
+        raise PermissionError("拒绝入库：提交口令校验失败")
 
 
 def now_iso() -> str:
@@ -74,7 +108,12 @@ def parse_issue_markdown(body: str, title: str = "") -> dict[str, Any]:
     if trigger_block:
         trigger_json = json.loads(_strip_code_fence(trigger_block))
         if trigger_json.get("reset_slug"):
-            return {"action": "reset", "reset_slug": slugify(str(trigger_json["reset_slug"]))}
+            return {
+                "action": "reset",
+                "reset_slug": slugify(str(trigger_json["reset_slug"])),
+                "auth_hash": str(trigger_json.get("auth_hash", "")).strip(),
+                "passcode": str(trigger_json.get("passcode", "")).strip(),
+            }
 
     # 2. 检查是否为提交页生成的标记块格式
     meta_block = _extract_between(normalized, "<!--HACKATHON_META_START-->", "<!--HACKATHON_META_END-->")
@@ -139,6 +178,7 @@ def parse_issue_markdown(body: str, title: str = "") -> dict[str, Any]:
         "tags": tags,
         "summary": pick("一句话简介", "Summary", default="由 Muse AI 自动分析提交的 Hackathon 设计规范。"),
         "project_type": pick("项目形态", "Project Type", default="fullstack-web"),
+        "passcode": pick("安全提交口令", "Passcode", default=""),
         "spec_content": spec_content,
         "plan_content": plan_content,
     }
@@ -167,10 +207,17 @@ def save_hackathons_index(root_dir: Path, data: dict[str, Any]) -> Path:
     return index_path
 
 
-def ingest_entry(payload: dict[str, Any], root_dir: Path) -> dict[str, Any]:
+def ingest_entry(
+    payload: dict[str, Any],
+    root_dir: Path,
+    actor: str | None = None,
+    require_auth: bool = False,
+) -> dict[str, Any]:
     """将一条 Hackathon Spec/Plan 写入 site/data/specs/<slug>/ 并更新 site/data/hackathons.json。"""
+    verify_submission_auth(payload, actor=actor, require_auth=require_auth)
+
     if payload.get("action") == "reset" and payload.get("reset_slug"):
-        return reset_slug_status(str(payload["reset_slug"]), root_dir)
+        return reset_slug_status(str(payload["reset_slug"]), root_dir, actor=actor)
 
     title = str(payload.get("title", "")).strip()
     spec_content = str(payload.get("spec_content", "")).strip()
@@ -211,6 +258,7 @@ def ingest_entry(payload: dict[str, Any], root_dir: Path) -> dict[str, Any]:
         "plan_path": f"data/specs/{slug}/plan.md",
         "project_type": str(payload.get("project_type") or existing.get("project_type") or "fullstack-web"),
         "summary": str(payload.get("summary") or existing.get("summary") or ""),
+        "submitted_by": actor.strip() if actor else str(payload.get("submitted_by") or DEFAULT_ALLOWED_OWNER),
         "repo_url": str(existing.get("repo_url") or ""),
         "fallback_path": f"projects/{slug}",
         "created_at": str(existing.get("created_at") or now),
@@ -227,8 +275,9 @@ def ingest_entry(payload: dict[str, Any], root_dir: Path) -> dict[str, Any]:
     return entry
 
 
-def reset_slug_status(slug: str, root_dir: Path) -> dict[str, Any]:
+def reset_slug_status(slug: str, root_dir: Path, actor: str | None = None) -> dict[str, Any]:
     """将指定 slug 的状态重置为 pending_dev，用于一键重新触发开发。"""
+    verify_submission_auth({}, actor=actor, require_auth=False)
     normalized_slug = slugify(slug)
     index_data = load_hackathons_index(root_dir)
     hackathons: list[dict[str, Any]] = index_data.setdefault("hackathons", [])
@@ -255,25 +304,27 @@ def main() -> int:
     parser.add_argument("--issue-body-file", help="GitHub Issue 正文文件路径")
     parser.add_argument("--issue-title", default="", help="GitHub Issue 标题")
     parser.add_argument("--reset-slug", help="将指定 slug 状态重置为 pending_dev")
+    parser.add_argument("--actor", default=None, help="提交者 GitHub 用户名（用于权限校验）")
+    parser.add_argument("--require-auth", action="store_true", help="强制校验提交口令哈希")
     args = parser.parse_args()
 
     root_dir = Path(args.root_dir).resolve()
 
     if args.reset_slug:
-        entry = reset_slug_status(args.reset_slug, root_dir)
+        entry = reset_slug_status(args.reset_slug, root_dir, actor=args.actor)
         print(json.dumps({"action": "reset", "entry": entry}, ensure_ascii=False, indent=2))
         return 0
 
     if args.input_json:
         payload = json.loads(Path(args.input_json).read_text(encoding="utf-8"))
-        entry = ingest_entry(payload, root_dir)
+        entry = ingest_entry(payload, root_dir, actor=args.actor, require_auth=args.require_auth)
         print(json.dumps({"action": "ingest_json", "entry": entry}, ensure_ascii=False, indent=2))
         return 0
 
     if args.issue_body_file:
         body_text = Path(args.issue_body_file).read_text(encoding="utf-8")
         payload = parse_issue_markdown(body_text, title=args.issue_title)
-        entry = ingest_entry(payload, root_dir)
+        entry = ingest_entry(payload, root_dir, actor=args.actor, require_auth=args.require_auth)
         print(json.dumps({"action": "ingest_issue", "entry": entry}, ensure_ascii=False, indent=2))
         return 0
 

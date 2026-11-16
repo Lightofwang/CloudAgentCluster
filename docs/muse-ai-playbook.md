@@ -27,7 +27,11 @@
 
 ## 第二步：在 Muse AI 中创建每日定时任务
 
-在 `muse.ai` 创建一个 **Daily Scheduled Task**（例如每天上午 **09:00** 运行），并将下方完整 Prompt 复制进去（请将网址替换为你的实际 GitHub Pages 地址）：
+> **安全访问说明（非常重要）**：
+> 1. 为防止开源仓库被他人恶意提交，网站已开启**口令 + GitHub 所有者双重保护**：默认专属口令为 `MUSE-LIGHT-2026`。
+> 2. 请在 **Muse AI 云端浏览器**中预先登录一次你本人的 GitHub 账号 **`Lightofwang`**（或配置你的 GitHub PAT），GitHub Actions 仅放行由 `Lightofwang` 提交且口令校验通过的 Issue。
+
+在 `muse.ai` 创建一个 **Daily Scheduled Task**（例如每天上午 **09:00** 运行），并将下方完整 Prompt 复制进去：
 
 ```text
 You are my automated Hackathon Scout & Architect. Run this task daily:
@@ -47,9 +51,10 @@ You are my automated Hackathon Scout & Architect. Run this task daily:
    - `spec.md`: Project overview, core features, REST API endpoints & JSON schemas, frontend UI layout, and non-functional constraints.
    - `plan.md`: Step-by-step implementation phases (Phase 1 Backend, Phase 2 Frontend, Phase 3 Automated Tests & Verification).
 
-5. Open my submission hub in your browser:
-   https://lightofwang.github.io/CloudAgentCluster/submit.html
-   Fill in the form fields by their fixed IDs:
+5. Open my protected submission hub in your browser (the `?key=` parameter automatically unlocks `#submit-passcode`):
+   https://lightofwang.github.io/CloudAgentCluster/submit.html?key=MUSE-LIGHT-2026
+   Verify `#submit-passcode` is filled with `MUSE-LIGHT-2026` (if empty, fill it), then fill in the form fields by their fixed IDs:
+   - `#submit-passcode`: MUSE-LIGHT-2026
    - `#hackathon-title`: Hackathon & project title
    - `#hackathon-slug`: lowercase kebab-case slug (e.g. devpost-agent-arena-2026)
    - `#hackathon-platform`: devpost | lablab | dorahacks
@@ -62,7 +67,7 @@ You are my automated Hackathon Scout & Architect. Run this task daily:
    - `#spec-content`: full spec.md markdown
    - `#plan-content`: full plan.md markdown
 
-6. Click `#btn-submit-issue` (or directly open the pre-filled GitHub Issue page) and click the green "Submit new issue" button on GitHub so the GitHub Actions pipeline automatically ingests the Spec & Plan into the hub!
+6. Click `#btn-submit-issue` (making sure you are signed in to GitHub as `Lightofwang`) to open the pre-filled GitHub Issue page, then click the green "Submit new issue" button on GitHub so the GitHub Actions pipeline automatically verifies your identity & passcode and ingests the Spec & Plan into the hub!
 ```
 
 ---

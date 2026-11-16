@@ -1,5 +1,7 @@
+import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -295,6 +297,19 @@ Web3, AI Agent
                 os.environ.pop("HUB_PASSCODE", None)
             else:
                 os.environ["HUB_PASSCODE"] = prev_passcode
+
+    def test_06_frontend_hash_injection_pattern(self):
+        """验证 deploy-pages 使用的正则能正确把自定义口令的 SHA-256 注入真实 site/assets/app.js。"""
+        app_js = (ROOT_DIR / "site" / "assets" / "app.js").read_text(encoding="utf-8")
+        custom_secret = "my-memorable-secret-2026"
+        expected_digest = hashlib.sha256(custom_secret.encode("utf-8")).hexdigest()
+        updated, count = re.subn(
+            r'(const\s+EXPECTED_PASSCODE_HASH\s*=\s*")([a-f0-9]{64})(")',
+            rf"\g<1>{expected_digest}\g<3>",
+            app_js,
+        )
+        self.assertEqual(count, 1)
+        self.assertIn(expected_digest, updated)
 
 
 if __name__ == "__main__":

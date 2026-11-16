@@ -161,6 +161,32 @@ jobs:
         with:
           ref: main
 
+      - name: Inject HUB_PASSCODE SHA-256 hash into frontend
+        env:
+          HUB_PASSCODE: ${{ secrets.HUB_PASSCODE }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, re
+          from pathlib import Path
+
+          secret = os.environ.get("HUB_PASSCODE", "").strip()
+          if secret:
+              digest = hashlib.sha256(secret.encode("utf-8")).hexdigest()
+              app_js = Path("site/assets/app.js")
+              content = app_js.read_text(encoding="utf-8")
+              updated, count = re.subn(
+                  r'(const\s+EXPECTED_PASSCODE_HASH\s*=\s*")([a-f0-9]{64})(")',
+                  rf"\g<1>{digest}\g<3>",
+                  content,
+              )
+              if count != 1:
+                  raise RuntimeError(f"Expected 1 EXPECTED_PASSCODE_HASH replacement, got {count}")
+              app_js.write_text(updated, encoding="utf-8")
+              print("Injected SHA-256 hash from secrets.HUB_PASSCODE into site/assets/app.js")
+          else:
+              print("secrets.HUB_PASSCODE is not set; using default hash in site/assets/app.js")
+          PY
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

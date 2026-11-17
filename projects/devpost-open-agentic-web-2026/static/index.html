@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentBazaar — 开放智能体集市与信任注册表</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-container">
+      <div class="brand" onclick="app.switchTab('market')">
+        <span class="brand-logo">🏛️</span>
+        <div class="brand-text">
+          <span class="brand-name">AgentBazaar</span>
+          <span class="brand-tagline">Open Agentic Web 集市 & 信任注册表</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-item active" data-tab="market" onclick="app.switchTab('market')">
+          <span class="nav-icon">🏪</span> 智能体集市
+        </button>
+        <button class="nav-item" data-tab="playground" onclick="app.switchTab('playground')">
+          <span class="nav-icon">⚡</span> 协同演示台
+        </button>
+        <button class="nav-item" data-tab="trust" onclick="app.switchTab('trust')">
+          <span class="nav-icon">🛡️</span> 信任榜单
+        </button>
+        <button class="nav-item" data-tab="cross-site" onclick="app.switchTab('cross-site')">
+          <span class="nav-icon">🌐</span> 跨站互联
+        </button>
+        <button class="nav-item" data-tab="settings" onclick="app.switchTab('settings')">
+          <span class="nav-icon">⚙️</span> 系统设置
+        </button>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn-outline btn-sm" onclick="app.openExportManifest()">
+          <span>📄</span> Manifest
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="app.openRegisterModal()">
+          <span>+</span> 发布智能体门面
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- View: Marketplace -->
+    <section id="view-market" class="view-section active">
+      <div class="section-hero">
+        <div class="hero-content">
+          <h1>让每个小商家都拥有被 AI 发现的“智能体门面”</h1>
+          <p>基于 Open Agentic Web 开放规范，免复杂架构发布机器可读能力清单（<code>agent-network.json</code>），通过分布式信任度量让多智能体网络无障碍调用。</p>
+          <div class="hero-stats">
+            <div class="stat-pill">
+              <span class="stat-label">注册智能体</span>
+              <strong id="stat-agent-count">6</strong>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-label">网络协议</span>
+              <strong>Open Agentic Web v0.1</strong>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-label">平均信任分</span>
+              <strong id="stat-avg-trust">87</strong>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-label">运行架构</span>
+              <strong>零付费本地引擎 + BYO LLM</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marketplace Controls: Filter & Search -->
+      <div class="market-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="market-search-input" placeholder="按商家名称、商品、能力关键词搜索..." oninput="app.onSearchInput(this.value)">
+        </div>
+
+        <div class="capability-filters" id="capability-pills">
+          <button class="filter-pill active" onclick="app.filterByCapability('')">全部能力</button>
+          <button class="filter-pill" onclick="app.filterByCapability('price.quote')">💰 报价 (price.quote)</button>
+          <button class="filter-pill" onclick="app.filterByCapability('stock.check')">📦 库存 (stock.check)</button>
+          <button class="filter-pill" onclick="app.filterByCapability('order.status')">🚚 订单 (order.status)</button>
+          <button class="filter-pill" onclick="app.filterByCapability('appointment.book')">📅 预约 (appointment.book)</button>
+        </div>
+      </div>
+
+      <!-- Agent Cards Grid -->
+      <div class="agent-grid" id="agents-container">
+        <!-- Rendered dynamically -->
+        <div class="loading-spinner">正在加载智能体清单...</div>
+      </div>
+    </section>
+
+    <!-- View: Playground -->
+    <section id="view-playground" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>多智能体协作演示台 (Agent Runtime)</h2>
+          <p class="subtitle">在浏览器中直观体验跨商家智能体实时协作：意图理解 ➔ 动态发现 ➔ 信任校验 ➔ 并行调用 ➔ 决策汇总。</p>
+        </div>
+        <div class="scenario-tabs" id="scenario-selector">
+          <button class="scenario-btn active" onclick="app.selectScenario('compare-price')">
+            <span>🏷️</span> 多商家比价
+          </button>
+          <button class="scenario-btn" onclick="app.selectScenario('track-order')">
+            <span>🚚</span> 跨店订单追踪
+          </button>
+          <button class="scenario-btn" onclick="app.selectScenario('book-appointment')">
+            <span>📅</span> 端到端服务预约
+          </button>
+        </div>
+      </div>
+
+      <div class="playground-layout">
+        <!-- Col 1: Input & Controls -->
+        <div class="play-col input-panel">
+          <div class="panel-card">
+            <h3 class="panel-title">
+              <span class="icon">📝</span> 场景输入配置
+            </h3>
+            
+            <div id="scenario-form-container">
+              <!-- Rendered depending on scenario -->
+            </div>
+
+            <div class="quick-examples">
+              <span class="quick-label">快速预填示例：</span>
+              <div id="quick-presets" class="preset-chips"></div>
+            </div>
+
+            <div class="runtime-controls">
+              <button class="btn btn-primary btn-block" id="btn-run-start" onclick="app.startRun()">
+                <span>▶</span> 开始智能体协作
+              </button>
+              <div class="btn-group-row">
+                <button class="btn btn-secondary" id="btn-run-pause" onclick="app.togglePause()" disabled>
+                  <span id="pause-icon">⏸</span> <span id="pause-text">暂停</span>
+                </button>
+                <button class="btn btn-secondary" id="btn-run-step" onclick="app.stepNext()" disabled>
+                  <span>⏭</span> 单步执行
+                </button>
+                <button class="btn btn-outline" id="btn-run-takeover" onclick="app.takeoverRun()" disabled>
+                  <span>🕹️</span> 人类接管
+                </button>
+              </div>
+            </div>
+
+            <div class="runtime-status-box" id="runtime-status-banner">
+              <div class="status-indicator ready"></div>
+              <span id="runtime-status-text">运行时就绪，等待启动协作任务</span>
+            </div>
+          </div>
+
+          <!-- Execution Stats Summary -->
+          <div class="panel-card mt-3">
+            <h4 class="small-title">协作流程统计</h4>
+            <div class="metrics-grid">
+              <div class="metric-cell">
+                <span class="m-val" id="metric-step-count">0</span>
+                <span class="m-lbl">协作步骤</span>
+              </div>
+              <div class="metric-cell">
+                <span class="m-val" id="metric-agents-involved">0</span>
+                <span class="m-lbl">协同商家</span>
+              </div>
+              <div class="metric-cell">
+                <span class="m-val" id="metric-total-latency">0ms</span>
+                <span class="m-lbl">累计耗时</span>
+              </div>
+              <div class="metric-cell">
+                <span class="m-val" id="metric-engine-mode">本地规则</span>
+                <span class="m-lbl">执行引擎</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2: Step-by-Step Timeline -->
+        <div class="play-col timeline-panel">
+          <div class="panel-card timeline-card">
+            <div class="timeline-header">
+              <h3 class="panel-title">
+                <span class="icon">⏱️</span> 协作时间线 (Execution Timeline)
+              </h3>
+              <span class="badge badge-neutral" id="timeline-counter">0 步</span>
+            </div>
+            <div class="timeline-container" id="timeline-list">
+              <div class="empty-state">
+                <span class="empty-icon">🧭</span>
+                <p>点击“开始智能体协作”运行选定场景</p>
+                <small>智能体间的发现、校验与响应过程将逐条以卡片形式实时追加</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3: Result Dashboard -->
+        <div class="play-col result-panel">
+          <div class="panel-card">
+            <div class="result-header">
+              <h3 class="panel-title">
+                <span class="icon">🎯</span> 决策汇总与执行成果
+              </h3>
+              <span class="badge badge-success" id="result-status-badge" style="display:none;">已完成</span>
+            </div>
+
+            <div id="result-content-container">
+              <div class="empty-state">
+                <span class="empty-icon">📊</span>
+                <p>协作成果将在此处汇总</p>
+                <small>包含多方比价最优选、订单统一物流或数字预约凭证</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: Trust Board -->
+    <section id="view-trust" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>智能体信任榜单 (Trust Registry & Leaderboard)</h2>
+          <p class="subtitle">完全透明的去中心化可验证信任机制：由来源验真 (0-30)、调用成功率 (0-40) 与响应延迟 (0-30) 综合合成。</p>
+        </div>
+      </div>
+
+      <div class="trust-overview-cards">
+        <div class="info-card">
+          <div class="card-icon">🔏</div>
+          <h4>来源可验证性 (0-30分)</h4>
+          <p>检查 <code>/.well-known/agent-network.json</code> 是否可公网解析、域名与 Endpoint 匹配度及签名凭据。杜绝虚假冒名。</p>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">📈</div>
+          <h4>历史调用成功率 (0-40分)</h4>
+          <p>基于机器调用日志（<code>calls_ok / calls_total</code>），真实反应商家智能体的服务可用性与履约稳定性。</p>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">⚡</div>
+          <h4>响应延迟分位数 (0-30分)</h4>
+          <p>测量 p50 往返耗时：小于 200ms 得满分，大于 2000ms 得零分。保障多智能体协作链条的高效敏捷。</p>
+        </div>
+      </div>
+
+      <div class="trust-table-card">
+        <table class="trust-table">
+          <thead>
+            <tr>
+              <th>排名</th>
+              <th>商家智能体</th>
+              <th>综合信任分</th>
+              <th>细项得分分布 (验真 / 成功率 / 延迟)</th>
+              <th>总调用 / 成功率</th>
+              <th>p50 延迟</th>
+              <th>安全评级</th>
+            </tr>
+          </thead>
+          <tbody id="trust-leaderboard-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- View: Cross-Site Discovery -->
+    <section id="view-cross-site" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>跨站智能体互联与发现 (Agent-to-Agent Mesh)</h2>
+          <p class="subtitle">开放智能体网络的核心能力：输入任意兼容 Open Agentic Web 站点的 URL，抓取其 <code>agent-network.json</code>，实现跨站发现与能力即时互调。</p>
+        </div>
+      </div>
+
+      <div class="cross-site-card">
+        <div class="cross-site-input-row">
+          <input type="text" id="cross-site-url" class="form-input" placeholder="输入外部站点 URL，如 http://localhost:8000 或 https://example-agent.com" value="http://localhost:8000">
+          <button class="btn btn-primary" onclick="app.discoverExternalSite()">
+            <span>🌐</span> 抓取并解析 Manifest
+          </button>
+        </div>
+
+        <div id="cross-site-results" class="mt-4">
+          <div class="placeholder-tip">
+            提示：可直接点击上方按钮抓取当前本站，验证 Open Agentic Web 规范解析；或填入同局域网/互联网上的任意兼容站点。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: Settings -->
+    <section id="view-settings" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>系统设置与开发者选项</h2>
+          <p class="subtitle">管理本地模型接入凭证、导出标准 Manifest 或重置演示数据库。</p>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3 class="panel-title"><span class="icon">🤖</span> 自带模型 (BYO LLM Key)</h3>
+          <p class="card-desc">纯本地存储（仅保存在浏览器 localStorage 中，绝不上传至任何中间服务器）。配置后，演示台的意图理解与用户交互可直接驱动真实大模型；未配置时使用纯本地规则引擎。</p>
+
+          <div class="form-group">
+            <label>API Base URL</label>
+            <input type="text" id="setting-llm-base" class="form-input" placeholder="https://api.openai.com/v1 或兼容端点">
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <input type="password" id="setting-llm-key" class="form-input" placeholder="sk-...">
+          </div>
+          <div class="form-group">
+            <label>Model Name</label>
+            <input type="text" id="setting-llm-model" class="form-input" placeholder="gpt-4o-mini 或 gemini-1.5-flash" value="gpt-4o-mini">
+          </div>
+
+          <div class="form-actions-inline">
+            <button class="btn btn-primary btn-sm" onclick="app.saveLLMSettings()">保存模型设置</button>
+            <button class="btn btn-outline btn-sm" onclick="app.clearLLMSettings()">清除 Key</button>
+            <span id="setting-saved-tip" class="saved-tip" style="display:none;">已保存至浏览器本地！</span>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3 class="panel-title"><span class="icon">📦</span> 规范导出与数据重置</h3>
+          <p class="card-desc">维护本站的 Open Agentic Web 标准发布物，或在演示测试后一键恢复干净状态。</p>
+
+          <div class="action-list">
+            <div class="action-item">
+              <div>
+                <strong>导出本站 Agent Network Manifest</strong>
+                <p>下载符合规范的 <code>agent-network.json</code> 清单文件。</p>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="app.exportManifestDownload()">下载 JSON</button>
+            </div>
+
+            <div class="action-item">
+              <div>
+                <strong>在线查看 /.well-known/agent-network.json</strong>
+                <p>在浏览器新标签页中直接查看标准格式。</p>
+              </div>
+              <a href="/.well-known/agent-network.json" target="_blank" class="btn btn-secondary btn-sm">直接打开</a>
+            </div>
+
+            <div class="action-item">
+              <div>
+                <strong>重置演示数据</strong>
+                <p>清空新增测试记录，将 6 个商家智能体恢复至初始种子状态。</p>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="app.resetDemoData()">重置数据库</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Register New Agent -->
+  <div class="modal-backdrop" id="modal-register">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>发布新的小商家“智能体门面”</h3>
+        <button class="modal-close" onclick="app.closeRegisterModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-register-agent" onsubmit="app.handleRegisterSubmit(event)">
+          <div class="form-group">
+            <label>商家/服务名称 <span class="req">*</span></label>
+            <input type="text" id="reg-name" class="form-input" placeholder="例：老王胡同手冲咖啡 / 匠心修锁铺" required>
+          </div>
+          <div class="form-group">
+            <label>简介与服务特色 <span class="req">*</span></label>
+            <textarea id="reg-desc" class="form-input" rows="2" placeholder="例：精选云南微批次手冲豆，提供同城半小时急送与风味咨询" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>对外开放的智能体能力 (可多选) <span class="req">*</span></label>
+            <div class="checkbox-group">
+              <label class="checkbox-pill">
+                <input type="checkbox" name="reg-caps" value="price.quote" checked>
+                <span>💰 实时报价 (price.quote)</span>
+              </label>
+              <label class="checkbox-pill">
+                <input type="checkbox" name="reg-caps" value="stock.check" checked>
+                <span>📦 库存查询 (stock.check)</span>
+              </label>
+              <label class="checkbox-pill">
+                <input type="checkbox" name="reg-caps" value="order.status">
+                <span>🚚 订单状态追踪 (order.status)</span>
+              </label>
+              <label class="checkbox-pill">
+                <input type="checkbox" name="reg-caps" value="appointment.book">
+                <span>📅 到店/服务预约 (appointment.book)</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label>价格区间</label>
+              <input type="text" id="reg-price" class="form-input" value="¥30–¥300" placeholder="¥50–¥500">
+            </div>
+            <div class="form-group col-half">
+              <label>营业时间</label>
+              <input type="text" id="reg-hours" class="form-input" value="09:00–21:00" placeholder="09:00–21:00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>调用 Endpoint (默认自动生成本地端点)</label>
+            <input type="text" id="reg-endpoint" class="form-input" placeholder="留空则自动注册至 /api/agents/{id}/invoke">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="app.closeRegisterModal()">取消</button>
+            <button type="submit" class="btn btn-primary">确认发布到网络</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Agent Detail & Interactive Test Invoke Drawer -->
+  <div class="modal-backdrop" id="modal-agent-detail">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div class="agent-title-bar">
+          <span class="agent-avatar" id="modal-agent-avatar">🏪</span>
+          <div>
+            <h3 id="modal-agent-name">商家名称</h3>
+            <span class="mono-id" id="modal-agent-id">shop-xxx</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="app.closeAgentDetailModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="detail-desc" id="modal-agent-desc"></p>
+        
+        <div class="meta-tags-row" id="modal-agent-caps"></div>
+
+        <!-- Trust Breakdown Section -->
+        <div class="trust-breakdown-box">
+          <div class="trust-summary-head">
+            <span class="trust-badge-large" id="modal-trust-badge">87</span>
+            <div>
+              <strong>综合信任分评级</strong>
+              <p class="trust-sub">由智能体验证引擎自动实时计算</p>
+            </div>
+          </div>
+
+          <div class="breakdown-bars">
+            <div class="bar-row">
+              <div class="bar-label">
+                <span>来源可验证性</span>
+                <strong id="bar-val-verifiable">30 / 30</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill fill-green" id="bar-fill-verifiable" style="width: 100%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-label">
+                <span>历史调用成功率</span>
+                <strong id="bar-val-success">38 / 40</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill fill-blue" id="bar-fill-success" style="width: 95%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-label">
+                <span>响应延迟分位数</span>
+                <strong id="bar-val-latency">28 / 30</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill fill-amber" id="bar-fill-latency" style="width: 93%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="call-stats-strip">
+            <span>总调用次数: <strong id="modal-stat-total">128</strong></span>
+            <span>成功调用: <strong id="modal-stat-ok">121</strong></span>
+            <span>中位延迟: <strong id="modal-stat-p50">210ms</strong></span>
+            <span>价格区间: <strong id="modal-stat-price">¥50–¥500</strong></span>
+          </div>
+        </div>
+
+        <!-- Interactive Test Invoke Form -->
+        <div class="test-invoke-box">
+          <h4>🧪 试调用 (Interactive Test Invocation)</h4>
+          <p class="small-text">直接作为外部智能体对该节点发起调用测试，每次调用将更新该商家的信任分与延迟样本：</p>
+          
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label>选择测试能力</label>
+              <select id="invoke-capability-select" class="form-input" onchange="app.onInvokeCapChange(this.value)">
+                <!-- populated dynamically -->
+              </select>
+            </div>
+            <div class="form-group col-half">
+              <label>参数 (JSON)</label>
+              <input type="text" id="invoke-params-input" class="form-input" value='{"item": "西湖龙井 250g", "quantity": 1}'>
+            </div>
+          </div>
+
+          <div class="invoke-actions">
+            <button class="btn btn-primary btn-sm" id="btn-invoke-submit" onclick="app.executeTestInvoke()">
+              <span>⚡</span> 发起调用
+            </button>
+          </div>
+
+          <div class="invoke-result-area" id="invoke-result-container" style="display:none;">
+            <div class="result-top-meta">
+              <span class="badge badge-success" id="invoke-badge-status">成功 200 OK</span>
+              <span class="mono-meta" id="invoke-badge-lat">耗时: 112ms</span>
+            </div>
+            <pre class="json-code" id="invoke-result-json"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>AgentBazaar — 开放智能体网络基础设施 | Open Agentic Web Challenge 2026</p>
+      <div class="footer-links">
+        <a href="/.well-known/agent-network.json" target="_blank">/.well-known/agent-network.json</a>
+        <span>•</span>
+        <a href="/api/health" target="_blank">Health Status</a>
+        <span>•</span>
+        <span>Zero-Paid API Architecture</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

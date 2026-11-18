@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T09:25:13+08:00",
+  "updated_at": "2026-11-18T09:40:44+08:00",
   "site_config": {
     "github_owner": "Lightofwang",
     "github_repo": "CloudAgentCluster",
@@ -21,16 +21,16 @@
         "Observability"
       ],
       "match_score": 72,
-      "status": "in_progress",
+      "status": "completed",
       "spec_path": "data/specs/devpost-qnx-global-2026/spec.md",
       "plan_path": "data/specs/devpost-qnx-global-2026/plan.md",
       "project_type": "fullstack-web",
       "summary": "面向 QNX 8.0 开发者的系统可观测性工作台：解析目标系统 trace 与日志，可视化调度时序并自动发现优先级反转与错失截止期等异常，本地零付费运行。",
       "submitted_by": "Lightofwang",
-      "repo_url": "",
+      "repo_url": "https://github.com/Lightofwang/CloudAgentCluster/tree/main/projects/devpost-qnx-global-2026",
       "fallback_path": "projects/devpost-qnx-global-2026",
       "created_at": "2026-11-18T09:18:53+08:00",
-      "completed_at": "",
+      "completed_at": "2026-11-18T09:40:44+08:00",
       "claimed_by": "ec2-worker",
       "claimed_at": "2026-11-18T09:25:13+08:00"
     },

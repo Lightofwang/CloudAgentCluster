@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from fastapi import HTTPException
 from app.db import get_connection, row_to_dict
@@ -62,7 +62,7 @@ def create_draft_session(blue_team_id: str, red_team_id: str, series_type: str =
             raise HTTPException(status_code=404, detail=f"Red team '{red_team_id}' not found")
 
         draft_id = f"d_{uuid.uuid4().hex[:8]}"
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         initial_games = [create_empty_game(1)]
 
         cur.execute("""
@@ -195,7 +195,7 @@ def execute_action(draft_id: str, side: str, action: str, champion_id: str) -> D
         if next_turn >= len(DRAFT_TURNS):
             curr_game["status"] = "completed"
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         cur.execute("""
         UPDATE drafts
         SET games = ?, current_turn_index = ?, updated_at = ?
@@ -257,7 +257,7 @@ def advance_next_game(draft_id: str, winner: Optional[str] = None) -> Dict[str, 
             data["current_game"] = next_game_num
             data["current_turn_index"] = 0
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         cur.execute("""
         UPDATE drafts
         SET games = ?, current_game = ?, current_turn_index = ?,

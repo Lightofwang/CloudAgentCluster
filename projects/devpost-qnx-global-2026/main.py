@@ -146,7 +146,7 @@ class GenerateTraceRequest(BaseModel):
 def generate_trace_endpoint(req: GenerateTraceRequest):
     trace_id = f"tr_{uuid.uuid4().hex[:8]}"
     filename = f"synthetic_qnx_t{req.threads}_{req.duration_seconds}s.trace.jsonl"
-    created_at = datetime.datetime.utcnow().isoformat() + "Z"
+    created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     events_gen = generate_qnx_trace_events(
         threads_count=req.threads,
@@ -197,7 +197,7 @@ async def upload_trace_file(file: UploadFile = File(...)):
 
     trace_id = f"tr_{uuid.uuid4().hex[:8]}"
     filename = file.filename or "uploaded_qnx.trace.jsonl"
-    created_at = datetime.datetime.utcnow().isoformat() + "Z"
+    created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     text_stream = io.StringIO(content.decode("utf-8", errors="replace"))
 

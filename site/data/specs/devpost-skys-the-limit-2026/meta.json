@@ -1,0 +1,26 @@
+{
+  "id": "devpost-skys-the-limit-2026",
+  "slug": "devpost-skys-the-limit-2026",
+  "title": "Cloud9 × JetBrains Sky's the Limit: DraftLens — LoL 宏观侦察与 Fearless Draft 管理系统",
+  "platform": "devpost",
+  "source_url": "https://cloud9.devpost.com/",
+  "deadline": "2027-01-12",
+  "prize_pool": "$25,000 cash",
+  "tags": [
+    "Full-Stack",
+    "Developer Tools",
+    "AI Agent",
+    "Esports Analytics"
+  ],
+  "match_score": 84,
+  "status": "pending_dev",
+  "spec_path": "data/specs/devpost-skys-the-limit-2026/spec.md",
+  "plan_path": "data/specs/devpost-skys-the-limit-2026/plan.md",
+  "project_type": "fullstack-web",
+  "summary": "为英雄联盟教练打造的宏观侦察与 Fearless Draft 管理系统：战队数据、选角模拟与阵容推荐一站式全栈 Web 应用，本地零付费运行。",
+  "submitted_by": "Lightofwang",
+  "repo_url": "",
+  "fallback_path": "projects/devpost-skys-the-limit-2026",
+  "created_at": "2026-11-18T09:08:13+08:00",
+  "completed_at": ""
+}

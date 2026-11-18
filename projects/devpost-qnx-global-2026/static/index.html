@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TraceLens — QNX 系统可观测性工作台</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-icon">TL</div>
+      <span>TraceLens</span>
+      <span class="badge-qnx">QNX 8.0</span>
+    </div>
+
+    <div class="topbar-center">
+      <div class="trace-selector-wrap">
+        <label for="traceSelect">当前 Trace:</label>
+        <select id="traceSelect" class="trace-dropdown">
+          <option value="">加载中...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="btnOpenGenerate" class="btn btn-secondary">
+        ⚡ <span>生成示例 Trace</span>
+      </button>
+      <button id="btnOpenUpload" class="btn btn-primary">
+        ⬆ <span>上传 Trace</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main App Layout -->
+  <div class="app-container">
+    <!-- Left Sidebar Navigation -->
+    <nav class="sidebar">
+      <ul class="nav-list">
+        <li class="nav-item active" data-view="overview">
+          <a href="#overview">
+            <span>📊</span>
+            <span>系统总览</span>
+          </a>
+        </li>
+        <li class="nav-item" data-view="timeline">
+          <a href="#timeline">
+            <span>⏱</span>
+            <span>调度时序时间线</span>
+          </a>
+        </li>
+        <li class="nav-item" data-view="stats">
+          <a href="#stats">
+            <span>📈</span>
+            <span>CPU & IPC 统计</span>
+          </a>
+        </li>
+        <li class="nav-item" data-view="anomalies">
+          <a href="#anomalies">
+            <span>⚠</span>
+            <span>实时异常诊断</span>
+            <span id="anomalyNavBadge" class="nav-badge" style="display:none;">0</span>
+          </a>
+        </li>
+        <li class="nav-item" data-view="reference">
+          <a href="#reference">
+            <span>📖</span>
+            <span>QNX 事件参考</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div>QNX Global Hackathon 2026</div>
+        <div style="color:var(--text-muted); margin-top:2px;">Developer Tooling Track</div>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+      <!-- 1. Overview View -->
+      <section id="view-overview" class="view-section active">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">系统总览</h1>
+            <p class="page-subtitle">目标 QNX 系统 trace 会话概要与关键性能指标</p>
+          </div>
+          <div>
+            <button id="btnRefreshOverview" class="btn btn-secondary btn-sm">🔄 刷新数据</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-title">解析事件总数</div>
+            <div id="kpiTotalEvents" class="card-value">-</div>
+            <div id="kpiDurationText" class="card-subtext">时间跨度: -</div>
+          </div>
+          <div class="card">
+            <div class="card-title">活跃 QNX 线程</div>
+            <div id="kpiThreads" class="card-value">-</div>
+            <div id="kpiProcessCount" class="card-subtext">包含系统与应用进程</div>
+          </div>
+          <div class="card">
+            <div class="card-title">最高 CPU 负载线程</div>
+            <div id="kpiTopThread" class="card-value" style="font-size:1.4rem;">-</div>
+            <div id="kpiTopThreadPct" class="card-subtext">CPU 占空比: -</div>
+          </div>
+          <div id="kpiAnomalyCard" class="card highlight-danger">
+            <div class="card-title">检测到的系统异常</div>
+            <div id="kpiAnomalies" class="card-value">0</div>
+            <div class="card-subtext">优先级反转 / 错失截止期 / 中断风暴</div>
+          </div>
+        </div>
+
+        <!-- Ingested Traces History Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Trace 库与历史会话</span>
+            <span id="traceCountBadge" style="font-size:0.8rem; color:var(--text-secondary);">共 0 个会话</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Trace ID</th>
+                  <th>文件名</th>
+                  <th>解析事件 / 总行数</th>
+                  <th>时间跨度</th>
+                  <th>线程数</th>
+                  <th>采集时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="traceTableBody">
+                <tr><td colspan="7" style="text-align:center; color:var(--text-secondary);">暂无 Trace，请点击上方按钮生成或上传</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Timeline View -->
+      <section id="view-timeline" class="view-section">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">调度时序时间线</h1>
+            <p class="page-subtitle">毫秒级线程调度状态流转 (RUNNING / READY / BLOCKED) 与硬件中断</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button id="btnExportTimelinePng" class="btn btn-secondary btn-sm">📷 导出 PNG</button>
+            <button id="btnResetZoom" class="btn btn-secondary btn-sm">🔍 重置缩放 (100%)</button>
+          </div>
+        </div>
+
+        <!-- Timeline Toolbar -->
+        <div class="timeline-toolbar">
+          <div class="timeline-controls">
+            <div class="timeline-range-box">
+              <span>时间窗口:</span>
+              <input type="range" id="zoomSlider" min="0" max="100" value="0">
+              <span id="rangeDisplay" style="font-family:var(--font-mono); font-size:0.75rem;">0ms ~ 10000ms</span>
+            </div>
+            <input type="text" id="threadFilterInput" class="form-control" placeholder="过滤线程或进程名..." style="width:180px; padding:4px 8px; font-size:0.78rem;">
+          </div>
+
+          <div class="timeline-legend">
+            <div class="legend-item"><div class="legend-dot dot-running"></div><span>RUNNING (运行)</span></div>
+            <div class="legend-item"><div class="legend-dot dot-ready"></div><span>READY (就绪)</span></div>
+            <div class="legend-item"><div class="legend-dot dot-blocked"></div><span>BLOCKED (阻塞)</span></div>
+            <div class="legend-item"><div class="legend-dot dot-interrupt"></div><span>IRQ (中断)</span></div>
+          </div>
+        </div>
+
+        <!-- Timeline Canvas Container -->
+        <div class="timeline-canvas-container">
+          <canvas id="timelineCanvas"></canvas>
+          <div id="timelineTooltip" class="canvas-tooltip"></div>
+        </div>
+      </section>
+
+      <!-- 3. Statistics View -->
+      <section id="view-stats" class="view-section">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">CPU 与 IPC 统计</h1>
+            <p class="page-subtitle">线程计算负荷、QNX 消息通道吞吐与硬件中断开销汇总</p>
+          </div>
+        </div>
+
+        <!-- CPU Stats Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">线程 CPU 占用与状态比例 (Top 10)</span>
+          </div>
+          <div id="cpuStatsList" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="color:var(--text-secondary); font-size:0.85rem;">暂无统计数据</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- IPC Metrics Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">QNX IPC 消息与脉冲统计</span>
+              <span id="ipcTotalsBadge" style="font-size:0.78rem; color:var(--text-secondary);">-</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>通道 ID</th>
+                    <th>通道名称</th>
+                    <th>消息量</th>
+                    <th>脉冲量</th>
+                    <th>平均往返</th>
+                  </tr>
+                </thead>
+                <tbody id="ipcTableBody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">暂无 IPC 数据</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Interrupt Metrics Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">硬件中断 (IRQ) 触发与开销</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>IRQ</th>
+                    <th>触发次数</th>
+                    <th>总执行耗时</th>
+                    <th>平均耗时</th>
+                    <th>单次最大耗时</th>
+                  </tr>
+                </thead>
+                <tbody id="irqTableBody">
+                  <tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">暂无中断数据</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Anomalies View -->
+      <section id="view-anomalies" class="view-section">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">实时异常诊断清单</h1>
+            <p class="page-subtitle">QNX 本地确定性规则引擎自动识别的实时系统死锁风险与时序违背</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm anomaly-filter-btn active" data-sev="all">全部</button>
+            <button class="btn btn-secondary btn-sm anomaly-filter-btn" data-sev="critical">Critical</button>
+            <button class="btn btn-secondary btn-sm anomaly-filter-btn" data-sev="high">High</button>
+            <button class="btn btn-secondary btn-sm anomaly-filter-btn" data-sev="medium">Medium</button>
+          </div>
+        </div>
+
+        <div id="anomalyListContainer" class="anomaly-list">
+          <div style="color:var(--text-secondary); text-align:center; padding:40px 0;">当前 Trace 暂未发现实时异常</div>
+        </div>
+      </section>
+
+      <!-- 5. Reference View -->
+      <section id="view-reference" class="view-section">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">QNX 8.0 事件参考与采集指南</h1>
+            <p class="page-subtitle">事件类数据结构定义、物理目标机与虚拟目标机采集路径</p>
+          </div>
+        </div>
+
+        <!-- Event Types Reference -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">支持的 QNX Trace 事件类 (Event Classes)</span>
+          </div>
+          <div id="eventClassesReferenceContainer" style="display:flex; flex-direction:column; gap:16px;">
+            加载参考文档中...
+          </div>
+        </div>
+
+        <!-- Target Capture Path Guide -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">在真实目标机上采集 QNX Trace 的方法</span>
+          </div>
+          <div style="font-size:0.85rem; line-height:1.7; color:var(--text-primary);">
+            <h4 style="margin-top:8px; color:var(--accent-cyan);">路径 1: QEMU x86_64 QNX 8.0 虚拟机</h4>
+            <ol style="padding-left:20px; margin:6px 0 14px;">
+              <li>启动带有 <code>qnx-ifs.bin</code> 内核镜像的 QEMU 虚拟机：<code>qemu-system-x86_64 -M q35 -m 2G -smp 2 ...</code></li>
+              <li>在 QNX shell 中运行目标内核跟踪工具：<code>tracelogger -n 1 -f /dev/shmem/trace.raw &amp;</code></li>
+              <li>导出为文本或 JSON Lines 格式并传回主机：<code>traceprinter /dev/shmem/trace.raw &gt; target.log</code></li>
+            </ol>
+
+            <h4 style="margin-top:8px; color:var(--accent-cyan);">路径 2: 树莓派 5 (Raspberry Pi 5 ARM64)</h4>
+            <ol style="padding-left:20px; margin:6px 0 14px;">
+              <li>刷写 QNX 8.0 Neutrino BSP 固件并接入串口终端</li>
+              <li>通过 <code>slog2info -w &gt; /tmp/slog2.log</code> 监控系统与驱动日志流</li>
+              <li>使用 TraceLens 内置转换工具将捕获日志格式化为标准 JSON Lines 并在本控制台上传分析</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Generate Trace -->
+  <div id="modalGenerate" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">生成示例 QNX Trace</span>
+        <button class="modal-close-btn" data-close="modalGenerate">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="genThreads">线程数量 (Threads):</label>
+          <input type="number" id="genThreads" class="form-control" value="8" min="2" max="24">
+        </div>
+        <div class="form-group">
+          <label for="genDuration">仿真时长 (秒):</label>
+          <input type="number" id="genDuration" class="form-control" value="10" min="2" max="30">
+        </div>
+        <div class="form-group">
+          <label>注入实时系统异常场景:</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="injPi" value="priority-inversion" checked>
+              <span>优先级反转 (低优先级持锁导致高优先级任务严重阻塞 250ms)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="injDl" value="deadline-miss" checked>
+              <span>错失截止期 (周期性控制线程执行间隔超过预期 1.5 倍)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="injIrq" value="interrupt-storm" checked>
+              <span>中断风暴 (IRQ 42 在 1 秒窗口内超阈值高频触发 600+ 次)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="injBk" value="message-queue-backlog" checked>
+              <span>消息队列积压 (通道接收端未及时消费导致 30 条消息堆积)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modalGenerate">取消</button>
+        <button id="btnSubmitGenerate" class="btn btn-primary">立即生成并解析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Upload Trace -->
+  <div id="modalUpload" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">上传 QNX Trace 文件</span>
+        <button class="modal-close-btn" data-close="modalUpload">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="uploadFileInput">选择文件 (.trace.jsonl, .jsonl, .log):</label>
+          <input type="file" id="uploadFileInput" class="form-control" accept=".jsonl,.log,.txt">
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">支持最大 50MB。逐行流式解析，格式错误行将自动记录并在报告中呈现，不阻塞解析。</p>
+        </div>
+        <div id="uploadDiagnostics" style="display:none; margin-top:14px; background:var(--bg-tertiary); padding:10px; border-radius:6px; font-size:0.8rem;">
+          <!-- Diagnostics injected by JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modalUpload">关闭</button>
+        <button id="btnSubmitUpload" class="btn btn-primary">开始上传解析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/timeline_canvas.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

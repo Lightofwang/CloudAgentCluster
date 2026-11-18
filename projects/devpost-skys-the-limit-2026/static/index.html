@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DraftLens — LoL 宏观侦察与 Fearless Draft 管理系统</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Top Header -->
+  <header class="top-header">
+    <div class="brand">
+      <div class="brand-logo">DL</div>
+      <div class="brand-title">DraftLens</div>
+      <span class="brand-badge">Fearless Draft Ready</span>
+    </div>
+    <div class="header-status">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>本地引擎运行中</span>
+      </div>
+      <span class="badge badge-gold">Cloud9 × JetBrains 2026</span>
+    </div>
+  </header>
+
+  <!-- App Body Layout -->
+  <div class="app-layout">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar">
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#overview" class="nav-link active" data-route="overview">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">总览看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#teams" class="nav-link" data-route="teams">
+            <span class="nav-icon">🛡️</span>
+            <span class="nav-text">战队与选手</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#scout" class="nav-link" data-route="scout">
+            <span class="nav-icon">🎯</span>
+            <span class="nav-text">宏观侦察报告</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#draft" class="nav-link" data-route="draft">
+            <span class="nav-icon">⚔️</span>
+            <span class="nav-text">选角模拟器</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#history" class="nav-link" data-route="history">
+            <span class="nav-icon">📜</span>
+            <span class="nav-text">系列赛历史</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+      <!-- ============================================== -->
+      <!-- View 1: Overview                               -->
+      <!-- ============================================== -->
+      <section id="view-overview" class="view-section active">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">总览看板</h1>
+            <p class="section-subtitle">LoL 宏观对局数据沉淀与全局 BP 选角工作台</p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="navigate('draft')">⚔️ 进入选角模拟</button>
+          </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-label">联赛参赛战队</span>
+            <div id="stat-teams" class="stat-value">8</div>
+            <span class="stat-desc">涵盖进攻、运营与打架风格</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">内置选手名单</span>
+            <div class="stat-value">40</div>
+            <span class="stat-desc">5 大位置全覆盖与绝活池</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">收录英雄池</span>
+            <div id="stat-champions" class="stat-value">60</div>
+            <span class="stat-desc">具备完整协同与克制矩阵</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">历史宏观对局</span>
+            <div id="stat-matches" class="stat-value">120</div>
+            <span class="stat-desc">支持经济差与资源控制挖掘</span>
+          </div>
+        </div>
+
+        <!-- Recent Matches Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">最近联赛对局记录</div>
+            <span class="badge badge-blue">近 10 场</span>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>对战时间</th>
+                  <th>主队</th>
+                  <th>对手</th>
+                  <th>结果</th>
+                  <th>时长</th>
+                  <th>中立生物控制</th>
+                </tr>
+              </thead>
+              <tbody id="overview-matches-tbody">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- View 2: Teams                                  -->
+      <!-- ============================================== -->
+      <section id="view-teams" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">战队与选手数据库</h1>
+            <p class="section-subtitle">战队风格画像、选手熟练度与近期对战数据</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="loadTeams('')">全部</button>
+            <button class="btn btn-secondary" onclick="loadTeams('early-aggression')">前期进攻</button>
+            <button class="btn btn-secondary" onclick="loadTeams('late-macro')">运营后期</button>
+            <button class="btn btn-secondary" onclick="loadTeams('skirmish')">打架型</button>
+          </div>
+        </div>
+
+        <div id="teams-grid-container" class="team-grid">
+          <!-- Dynamically rendered -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- View 3: Macro Scouting Report                  -->
+      <!-- ============================================== -->
+      <section id="view-scout" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">宏观侦察报告 (Macro Scouting)</h1>
+            <p class="section-subtitle">基于对阵数据聚合目标控制率、经济曲线与风格总结</p>
+          </div>
+        </div>
+
+        <!-- Query Form -->
+        <div class="scout-controls">
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label">选择对手战队</label>
+            <select id="scout-team-select" class="form-select"></select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">分析对局场次</label>
+            <select id="scout-matches-count" class="form-select">
+              <option value="5">最近 5 场</option>
+              <option value="10">最近 10 场</option>
+              <option value="20">最近 20 场</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="fetchScoutReport()">🔍 生成侦察报告</button>
+        </div>
+
+        <!-- Scout Result Panel -->
+        <div id="scout-result-panel" style="display: none;">
+          <!-- Style Summary Banner -->
+          <div class="scout-summary-banner">
+            <span class="scout-summary-icon">🧠</span>
+            <div>
+              <strong style="color: var(--accent); font-size: 13px; text-transform: uppercase;">教练决策画像总结</strong>
+              <div id="scout-summary-text" class="scout-summary-text">--</div>
+            </div>
+          </div>
+
+          <!-- Scout Metrics Grid -->
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="stat-label">15 分钟经济差</span>
+              <div id="scout-stat-gold15" class="stat-value">--</div>
+              <span class="stat-desc">对线期整体经济主导权</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">场均视野分</span>
+              <div id="scout-stat-vision" class="stat-value">--</div>
+              <span class="stat-desc">全图眼位与排眼控制</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">一血率 (FB)</span>
+              <div id="scout-stat-fb" class="stat-value">--</div>
+              <span class="stat-desc">前期主动侵略意图</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">样本场次</span>
+              <div id="scout-stat-analyzed" class="stat-value">--</div>
+              <span class="stat-desc">实际聚合完成对局</span>
+            </div>
+          </div>
+
+          <!-- Charts & Objectives Panel -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+            <!-- Canvas Gold Diff Chart -->
+            <div class="panel" style="margin-bottom: 0;">
+              <div class="panel-header">
+                <div class="panel-title">📈 15~30 分钟经济差走势曲线</div>
+                <span class="badge badge-blue">Canvas 实时渲染</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="gold-diff-canvas" width="600" height="260" style="width: 100%; height: 100%;"></canvas>
+              </div>
+            </div>
+
+            <!-- Objectives Progress Bars -->
+            <div class="panel" style="margin-bottom: 0;">
+              <div class="panel-header">
+                <div class="panel-title">🐉 中立资源控制率</div>
+                <span class="badge badge-gold">胜负手指标</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 20px; padding: 10px 0;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span>小龙控制率 (Dragon)</span>
+                    <strong id="label-dragon" style="color: var(--blue-light);">--</strong>
+                  </div>
+                  <div style="background: var(--bg-secondary); height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div id="bar-dragon" style="width: 0%; height: 100%; background: var(--blue-team); transition: width 0.4s;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span>峡谷先锋控制率 (Herald)</span>
+                    <strong id="label-herald" style="color: var(--accent);">--</strong>
+                  </div>
+                  <div style="background: var(--bg-secondary); height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div id="bar-herald" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.4s;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span>大龙/男爵控制率 (Baron)</span>
+                    <strong id="label-baron" style="color: var(--gold);">--</strong>
+                  </div>
+                  <div style="background: var(--bg-secondary); height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div id="bar-baron" style="width: 0%; height: 100%; background: var(--gold); transition: width 0.4s;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Champion Preferences -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">⭐ 战队招牌英雄偏好</div>
+              <span class="badge badge-blue">Top 5 选取率</span>
+            </div>
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>位置</th>
+                    <th>英雄名称</th>
+                    <th>选取偏好度</th>
+                    <th>偏好可视化</th>
+                  </tr>
+                </thead>
+                <tbody id="scout-prefs-tbody">
+                  <!-- Dynamically rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- View 4: Fearless Draft Simulator (Core)        -->
+      <!-- ============================================== -->
+      <section id="view-draft" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">Fearless Draft 选角模拟器</h1>
+            <p class="section-subtitle">职业标准全局 BP 规则：系列赛内已选英雄自动锁定，不可重复出场</p>
+          </div>
+        </div>
+
+        <!-- Setup Bar -->
+        <div class="draft-setup-bar">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div class="form-group">
+              <label class="form-label" style="color: var(--blue-light);">蓝方战队</label>
+              <select id="draft-blue-team" class="form-select"></select>
+            </div>
+            <div style="font-weight: 800; color: var(--text-dim); margin-top: 18px;">VS</div>
+            <div class="form-group">
+              <label class="form-label" style="color: var(--red-light);">红方战队</label>
+              <select id="draft-red-team" class="form-select"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">系列赛制</label>
+              <select id="draft-series-type" class="form-select">
+                <option value="BO3">BO3 (三局两胜)</option>
+                <option value="BO5">BO5 (五局三胜)</option>
+                <option value="BO1">BO1 (单局决胜)</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top: 18px;">
+            <button class="btn btn-primary" onclick="startNewDraft()">🚀 创建系列赛 BP 会话</button>
+          </div>
+        </div>
+
+        <!-- Empty notice -->
+        <div id="draft-empty-notice" style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+          <div style="font-size: 40px; margin-bottom: 12px;">🛡️ ⚔️ 🎯</div>
+          <h3>尚未开启选角模拟</h3>
+          <p style="margin-top: 6px;">请在上方选择红蓝战队及系列赛制，点击“创建系列赛 BP 会话”开始模拟。</p>
+        </div>
+
+        <!-- Active Draft Container -->
+        <div id="draft-active-container" style="display: none;">
+          <!-- Scoreboard Header -->
+          <div class="series-scoreboard">
+            <div class="team-score-block">
+              <div class="team-side-indicator blue"></div>
+              <div>
+                <div id="draft-blue-name" style="font-size: 20px; font-weight: 800; color: var(--blue-light);">--</div>
+                <span class="badge badge-blue">蓝方 (Blue Side)</span>
+              </div>
+            </div>
+
+            <div class="series-meta-center">
+              <div id="draft-score-display" class="score-number">0 : 0</div>
+              <span id="draft-series-meta" class="badge badge-gold">BO3 · Game 1</span>
+              <div id="draft-turn-banner" class="turn-banner blue-active">
+                <span id="turn-pulse" class="turn-pulse" style="background-color: var(--blue-team);"></span>
+                <span id="turn-label-text">轮次 1/20: 蓝方 1 Ban</span>
+              </div>
+            </div>
+
+            <div class="team-score-block" style="flex-direction: row-reverse; text-align: right;">
+              <div class="team-side-indicator red"></div>
+              <div>
+                <div id="draft-red-name" style="font-size: 20px; font-weight: 800; color: var(--red-light);">--</div>
+                <span class="badge badge-red">红方 (Red Side)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fearless Locked Strip -->
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+              <span>🔒 全局 Fearless 锁定英雄池:</span>
+              <span id="fearless-locked-count" class="badge badge-red">0 位</span>
+            </div>
+            <div id="fearless-locked-strip" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;"></div>
+          </div>
+
+          <!-- Main Draft Interactive Board -->
+          <div class="draft-board-container">
+            <!-- Left: Blue Side -->
+            <div class="team-draft-column">
+              <div class="column-header blue">
+                <span>蓝方禁选 (Bans & Picks)</span>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">BAN 禁用区 (5 席)</div>
+                <div id="blue-bans-row" class="ban-slots-row"></div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">PICK 选角阵容 (5 席)</div>
+                <div id="blue-picks-list" class="pick-slots-list"></div>
+              </div>
+            </div>
+
+            <!-- Center: Champions Pool & Search -->
+            <div class="center-pool-panel">
+              <div class="pool-filter-bar">
+                <div class="role-tabs">
+                  <button class="role-tab-btn active" data-role="ALL" onclick="setDraftRoleFilter('ALL')">全部</button>
+                  <button class="role-tab-btn" data-role="TOP" onclick="setDraftRoleFilter('TOP')">上单 TOP</button>
+                  <button class="role-tab-btn" data-role="JUG" onclick="setDraftRoleFilter('JUG')">打野 JUG</button>
+                  <button class="role-tab-btn" data-role="MID" onclick="setDraftRoleFilter('MID')">中单 MID</button>
+                  <button class="role-tab-btn" data-role="ADC" onclick="setDraftRoleFilter('ADC')">射手 ADC</button>
+                  <button class="role-tab-btn" data-role="SUP" onclick="setDraftRoleFilter('SUP')">辅助 SUP</button>
+                </div>
+                <div>
+                  <input type="text" class="form-input" style="padding: 4px 10px; font-size: 12px; width: 140px;" placeholder="搜索英雄..." oninput="onDraftSearchInput(this.value)">
+                </div>
+              </div>
+
+              <!-- Champions Grid -->
+              <div id="champions-pool-grid" class="champions-pool-grid"></div>
+
+              <!-- Next Game Controls (Visible when turn 20 finished) -->
+              <div id="next-game-btn-container" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 8px; padding: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <strong style="color: var(--success);">🎉 本局 BP 顺利完成！</strong>
+                  <div style="font-size: 12px; color: var(--text-muted);">已选英雄将进入全局 Fearless 锁定，后续局不可选。</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary" style="border-color: var(--blue-team); color: var(--blue-light);" onclick="triggerAdvanceNextGame('blue')">蓝方胜出 ➔ 下一局</button>
+                  <button class="btn btn-secondary" style="border-color: var(--red-team); color: var(--red-light);" onclick="triggerAdvanceNextGame('red')">红方胜出 ➔ 下一局</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Red Side -->
+            <div class="team-draft-column">
+              <div class="column-header red">
+                <span>红方禁选 (Bans & Picks)</span>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">BAN 禁用区 (5 席)</div>
+                <div id="red-bans-row" class="ban-slots-row"></div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 6px;">PICK 选角阵容 (5 席)</div>
+                <div id="red-picks-list" class="pick-slots-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Heuristic Recommendation Panel -->
+          <div class="recommend-panel">
+            <div class="recommend-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">🤖</span>
+                <strong style="font-size: 15px;">教练选角启发式推荐引擎 (本地零 API 协同/克制加权打分)</strong>
+              </div>
+              <span class="badge badge-gold">Top 3 候选与决策理由</span>
+            </div>
+            <div id="recommend-cards-grid" class="recommend-cards-grid">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- View 5: History                                -->
+      <!-- ============================================== -->
+      <section id="view-history" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">系列赛复盘与历史</h1>
+            <p class="section-subtitle">选角会话详细历程与全局锁定记录</p>
+          </div>
+        </div>
+        <div id="history-content-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Team Detail Modal -->
+  <div id="team-detail-modal" class="modal-overlay" onclick="if(event.target === this) closeTeamModal()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeTeamModal()">✕</button>
+      <h2 id="modal-team-name" style="margin-bottom: 6px;">--</h2>
+      <p id="modal-team-stats" style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">--</p>
+
+      <div class="panel-title" style="margin-bottom: 10px;">战队选手阵容名单</div>
+      <div class="data-table-wrapper" style="margin-bottom: 20px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>位置</th>
+              <th>选手 ID</th>
+              <th>KDA</th>
+              <th>招牌绝活英雄</th>
+              <th>近期状态</th>
+            </tr>
+          </thead>
+          <tbody id="modal-players-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

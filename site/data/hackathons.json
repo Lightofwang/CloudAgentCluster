@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T10:38:57+08:00",
+  "updated_at": "2026-11-20T10:40:47+08:00",
   "site_config": {
     "github_owner": "Lightofwang",
     "github_repo": "CloudAgentCluster",
@@ -32,7 +32,8 @@
       "created_at": "2026-11-18T09:18:53+08:00",
       "completed_at": "2026-11-18T09:40:44+08:00",
       "claimed_by": "ec2-worker",
-      "claimed_at": "2026-11-18T09:25:13+08:00"
+      "claimed_at": "2026-11-18T09:25:13+08:00",
+      "submission_path": "data/specs/devpost-qnx-global-2026/submission.md"
     },
     {
       "id": "devpost-skys-the-limit-2026",

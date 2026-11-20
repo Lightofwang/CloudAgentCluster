@@ -247,6 +247,19 @@ if __name__ == "__main__":
 """
     _write_if_needed(project_dir / "tests" / "test_app.py", test_code, force)
 
+    run_json = {
+        "runtime": "python",
+        "requirements": "",
+        "prepare": [],
+        "start": ["{python}", "backend/server.py"],
+        "health_url": "/api/health",
+    }
+    _write_if_needed(
+        project_dir / "run.json",
+        json.dumps(run_json, ensure_ascii=False, indent=2) + "\n",
+        force,
+    )
+
     return project_dir
 
 

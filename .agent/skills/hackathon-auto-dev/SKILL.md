@@ -38,6 +38,7 @@ python scripts/sync_and_queue.py claim --json
    - `backend/server.py`（或对应的后端模块）：实现所有 Spec 中定义的 REST API、输入校验与核心业务逻辑；
    - `frontend/`：实现美观、可交互、能完整走通比赛 Demo 场景的前端网页；
    - `tests/test_app.py`：编写端到端 HTTP 接口与静态前端验证测试用例；
+   - `run.json`：**必须**在项目根目录保留或更新标准启动清单（包含 `runtime`, `requirements`, `prepare`, `start`, `health_url`），确保用户可通过 `python scripts/run_project.py start <slug>` 一键启动；
    - `README.md`：更新真实的项目启动方法、API 说明与测试指令。
 3. 运行项目单元测试并确认全部通过：
    ```bash

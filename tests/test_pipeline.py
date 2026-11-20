@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
 from ingest_spec import TZ_CN, expected_passcode_hash, ingest_entry, parse_issue_markdown  # noqa: E402
 from publish_project import publish_project  # noqa: E402
+from run_project import detect_project_spec, find_free_port, list_projects, start_project  # noqa: E402
 from scaffold_fullstack import scaffold_project  # noqa: E402
 from sync_and_queue import _is_owner_trusted, claim_next_task, mark_status, sync_from_site_url  # noqa: E402
 
@@ -412,6 +413,44 @@ Web3, AI Agent
         # 5. 所有任务均已被占用且未过期时，再抢返回 None（绝不冲突重复领取）
         none_left = claim_next_task(node_local, worker_id="local-app", lease_minutes=120)
         self.assertIsNone(none_left)
+
+    def test_08_run_project_detection_and_run_json(self):
+        """验证统一启动器 run_project.py 对现有真实项目与 run.json 的探测及空闲端口分配。"""
+        items = {item["slug"]: item for item in list_projects(ROOT_DIR / "projects")}
+        self.assertIn("demo-ai-agent-copilot", items)
+        self.assertEqual(items["demo-ai-agent-copilot"]["start"], ["{python}", "backend/server.py"])
+
+        # 验证真实存在的多形态项目均可正确探测
+        if "devpost-skys-the-limit-2026" in items:
+            self.assertEqual(items["devpost-skys-the-limit-2026"]["prepare"], ["{python} -m app.seed"])
+            self.assertIn("main:app", items["devpost-skys-the-limit-2026"]["start"])
+        if "devpost-relate-neo4j-2026" in items:
+            self.assertIn("app.main:app", items["devpost-relate-neo4j-2026"]["start"])
+
+        # 验证自定义 run.json 优先级高于自动探测
+        custom_proj = self.tmp_root / "projects" / "custom-node-app"
+        custom_proj.mkdir(parents=True, exist_ok=True)
+        (custom_proj / "run.json").write_text(
+            json.dumps(
+                {
+                    "runtime": "node",
+                    "requirements": "package.json",
+                    "prepare": [],
+                    "start": ["npm", "run", "dev", "--", "--port", "{port}"],
+                    "health_url": "/healthz",
+                }
+            ),
+            encoding="utf-8",
+        )
+        spec = detect_project_spec(custom_proj)
+        self.assertEqual(spec["source"], "run.json")
+        self.assertEqual(spec["runtime"], "node")
+
+        # 验证端口探测与 dry-run 启动
+        free_port = find_free_port("127.0.0.1", preferred=18900)
+        self.assertGreaterEqual(free_port, 18900)
+        exit_code = start_project("demo-ai-agent-copilot", ROOT_DIR / "projects", preferred_port=18900, dry_run=True)
+        self.assertEqual(exit_code, 0)
 
 
 if __name__ == "__main__":

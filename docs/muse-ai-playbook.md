@@ -48,11 +48,18 @@ You are my automated Hackathon Scout & Architect. Run this task daily:
 
 3. Filter for AI, AI Agent, Developer Tools, or Full-Stack Web hackathons that are currently open for registration with clear prizes and at least 3 days left before deadline. Score and pick the Top 1-2 best matching NEW hackathons not already in hackathons.json.
 
-4. For each selected hackathon, design a winning, demo-ready Full-Stack Web Application (Python HTTP/FastAPI backend + modern interactive HTML/CSS/JS frontend, zero paid API keys required to run locally, and automated unittest test suite). Draft two detailed Markdown documents:
-   - `spec.md`: Project overview, core features, REST API endpoints & JSON schemas, frontend UI layout, and non-functional constraints.
+4. For each selected hackathon, read the official hackathon **Submission Requirements & Judging Criteria** carefully, then draft three detailed Markdown documents:
+   - `spec.md`: Project overview, core features, REST API endpoints & JSON schemas, frontend UI layout, and non-functional constraints (winning, demo-ready Full-Stack Web Application with zero paid API keys required).
    - `plan.md`: Step-by-step implementation phases (Phase 1 Backend, Phase 2 Frontend, Phase 3 Automated Tests & Verification).
+   - `submission.md`: Actionable **Post-Development Submission Checklist** in Chinese telling me exactly what remaining manual steps I must complete after code is finished:
+     1) **Demo Video Requirements**: Whether a video is required, max duration (e.g. 2 min / 3 min), upload platform (YouTube/Loom/Vimeo), and a step-by-step screen-recording script;
+     2) **Live Deployment / Hosting**: Whether a live public URL is required (and recommended free deploy command or tunnel);
+     3) **Platform Form Fields**: Exact track/category to select, project tagline, pitch text, and any mandatory sponsor/tool tags or compliance questionnaires;
+     4) **Judging Weight & Final Pre-Submit Check**.
 
-5. Open my protected submission hub in your browser (the `?key=` parameter automatically unlocks `#submit-passcode`):
+5. Also check `hackathons.json` for any `completed` (or `in_progress`/`in_dev`) hackathons whose `submission_path` is empty (`""`) or missing. For those existing projects, visit their `source_url`, draft `submission.md` for them, open `submit.html?key=<YOUR_SECRET_PASSCODE>`, check `#submission-only-mode`, fill `#hackathon-slug`, `#hackathon-title`, and `#submission-content`, and submit so their checklist is backfilled WITHOUT re-triggering code development!
+
+6. For new hackathons, open my protected submission hub in your browser (the `?key=` parameter automatically unlocks `#submit-passcode`):
    https://lightofwang.github.io/CloudAgentCluster/submit.html?key=<YOUR_SECRET_PASSCODE>
    Verify `#submit-passcode` is filled with `<YOUR_SECRET_PASSCODE>` (if empty, fill it), then fill in the form fields by their fixed IDs:
    - `#submit-passcode`: <YOUR_SECRET_PASSCODE>
@@ -67,8 +74,9 @@ You are my automated Hackathon Scout & Architect. Run this task daily:
    - `#hackathon-summary`: one-sentence Chinese summary
    - `#spec-content`: full spec.md markdown
    - `#plan-content`: full plan.md markdown
+   - `#submission-content`: full submission.md markdown
 
-6. Click `#btn-submit-issue` (making sure you are signed in to GitHub as `Lightofwang`) to open the pre-filled GitHub Issue page, then click the green "Submit new issue" button on GitHub so the GitHub Actions pipeline automatically verifies your identity & passcode and ingests the Spec & Plan into the hub!
+7. Click `#btn-submit-issue` (making sure you are signed in to GitHub as `Lightofwang`) to open the pre-filled GitHub Issue page, then click the green "Submit new issue" button on GitHub so the GitHub Actions pipeline automatically verifies your identity & passcode and ingests the Spec, Plan & Submission Checklist into the hub!
 ```
 
 ---

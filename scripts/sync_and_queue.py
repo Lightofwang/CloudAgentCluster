@@ -159,6 +159,14 @@ def sync_from_site_url(site_url: str, root_dir: Path, target_slug: str | None = 
             except urllib.error.URLError:
                 pass
 
+            sub_rel = item.get("submission_path")
+            if sub_rel:
+                try:
+                    sub_text = _http_get_text(f"{base}/{sub_rel.lstrip('/')}")
+                    (spec_dir / "submission.md").write_text(sub_text, encoding="utf-8")
+                except urllib.error.URLError:
+                    pass
+
             (spec_dir / "meta.json").write_text(
                 json.dumps(item, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",

@@ -13,6 +13,7 @@
     showRaw: false,
     specCache: {},
     planCache: {},
+    submissionCache: {},
   };
 
   const EXPECTED_PASSCODE_HASH =
@@ -374,6 +375,35 @@
       return;
     }
 
+    if (state.currentTab === "submission") {
+      const subPath = item.submission_path || `data/specs/${item.slug}/submission.md`;
+      rawLink.href = subPath;
+      const runCmd = `python scripts/run_project.py start ${item.slug}`;
+      const testCmd = `python scripts/run_project.py test ${item.slug}`;
+      const headerHtml = `
+        <div class="notice" style="margin-bottom:14px;">
+          <strong>本地一键启动与验证（方便录屏/截图/部署前自检）：</strong>
+          <pre class="raw-pre" style="margin-top:8px;">${escapeHtml(runCmd)}\n${escapeHtml(testCmd)}</pre>
+        </div>
+      `;
+      if (!item.submission_path) {
+        rawLink.style.display = "none";
+        toggleRawBtn.style.display = "none";
+        modalBody.innerHTML =
+          headerHtml +
+          `<div class="empty-state">当前比赛尚未录入 <code>submission.md</code> 参赛提交清单。<br/>你可以让 Muse AI 补充或前往原比赛页面核对提交要求：<a href="${escapeHtml(item.source_url || "#")}" target="_blank" rel="noopener">查看比赛规则 ↗</a></div>`;
+        return;
+      }
+      rawLink.style.display = "inline-flex";
+      toggleRawBtn.style.display = "inline-flex";
+      modalBody.innerHTML = headerHtml + `<p class="card-summary">正在读取 ${escapeHtml(subPath)} ...</p>`;
+      const content = await fetchTextCached(subPath, state.submissionCache, item.slug);
+      modalBody.innerHTML =
+        headerHtml +
+        (state.showRaw ? `<pre class="raw-pre">${escapeHtml(content)}</pre>` : renderMarkdown(content));
+      return;
+    }
+
     rawLink.style.display = "inline-flex";
     toggleRawBtn.style.display = "inline-flex";
     const filePath = state.currentTab === "spec" ? item.spec_path : item.plan_path;
@@ -413,7 +443,7 @@
       }
     });
 
-    ["spec", "plan", "trigger"].forEach((tab) => {
+    ["spec", "plan", "submission", "trigger"].forEach((tab) => {
       document.getElementById(`tab-${tab}`)?.addEventListener("click", () => {
         state.currentTab = tab;
         renderModalContent();
@@ -453,6 +483,8 @@
     const summary = document.getElementById("hackathon-summary").value.trim();
     const spec_content = document.getElementById("spec-content").value.trim();
     const plan_content = document.getElementById("plan-content").value.trim();
+    const submission_content = (document.getElementById("submission-content")?.value || "").trim();
+    const submission_only = Boolean(document.getElementById("submission-only-mode")?.checked);
 
     return {
       passcode,
@@ -470,6 +502,8 @@
       project_type: "fullstack-web",
       spec_content,
       plan_content,
+      submission_content,
+      submission_only,
     };
   }
 
@@ -485,11 +519,12 @@
       tags: payload.tags,
       summary: payload.summary,
       project_type: payload.project_type,
+      submission_only: payload.submission_only,
       submitted_by: payload.submitted_by,
       auth_hash: payload.auth_hash,
     };
 
-    return [
+    const blocks = [
       "<!--HACKATHON_META_START-->",
       "```json",
       JSON.stringify(meta, null, 2),
@@ -505,13 +540,36 @@
       "<!--PLAN_START-->",
       payload.plan_content,
       "<!--PLAN_END-->",
-    ].join("\n");
+    ];
+
+    if (payload.submission_content) {
+      blocks.push(
+        "",
+        "## 后续参赛提交清单",
+        "<!--SUBMISSION_START-->",
+        payload.submission_content,
+        "<!--SUBMISSION_END-->"
+      );
+    }
+
+    return blocks.join("\n");
   }
 
   function validatePayload(payload) {
     if (!verifyPasscodeInput(payload.passcode)) {
       showToast("未授权：提交口令不正确，已阻止生成提交载荷");
       return false;
+    }
+    if (payload.submission_only) {
+      if (!payload.slug && !payload.title) {
+        showToast("仅更新提交清单模式需要填写比赛 Slug 或标题");
+        return false;
+      }
+      if (!payload.submission_content) {
+        showToast("请填写后续参赛提交清单内容");
+        return false;
+      }
+      return true;
     }
     if (!payload.title || !payload.spec_content || !payload.plan_content) {
       showToast("请至少填写：比赛名称、Spec 设计文档和 Plan 实施计划");
@@ -564,7 +622,12 @@
         "# Spec: Multi-Agent Workflow Console\n\n## 1. 目标\n构建支持节点任务编排与执行日志回放的 Web 控制台。\n\n## 2. 接口\n- GET /api/workflows\n- POST /api/workflows/run";
       document.getElementById("plan-content").value =
         "# Plan: Multi-Agent Workflow Console\n\n## Phase 1: Python 后端 API\n实现工作流注册与模拟执行引擎。\n\n## Phase 2: 前端可视化看板\n提供流程图列表和运行状态面板。";
-      showToast("已填充示例 Spec & Plan 模板");
+      const subBox = document.getElementById("submission-content");
+      if (subBox) {
+        subBox.value =
+          "# 参赛提交清单 (Submission Checklist)\n\n## 1. 交付动作清单\n- [ ] 录制 2-3 分钟 Demo 演示视频（上传 YouTube/Loom 并设公开可见）\n- [ ] 部署公网可访问演示链接（如 Render / Railway / Cloudflare Tunnel）\n- [ ] 在比赛平台提交项目介绍与 GitHub 仓库链接\n\n## 2. 路演视频脚本要点\n1. 0:00-0:30 痛点与背景\n2. 0:30-2:00 实操演示核心工作流\n3. 2:00-2:30 架构亮点总结";
+      }
+      showToast("已填充示例 Spec、Plan & 提交清单模板");
     });
 
     document.getElementById("btn-submit-issue")?.addEventListener("click", () => {

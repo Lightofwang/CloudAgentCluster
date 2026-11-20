@@ -122,12 +122,19 @@ def parse_issue_markdown(body: str, title: str = "") -> dict[str, Any]:
     meta_block = _extract_between(normalized, "<!--HACKATHON_META_START-->", "<!--HACKATHON_META_END-->")
     spec_block = _extract_between(normalized, "<!--SPEC_START-->", "<!--SPEC_END-->")
     plan_block = _extract_between(normalized, "<!--PLAN_START-->", "<!--PLAN_END-->")
+    submission_block = _extract_between(normalized, "<!--SUBMISSION_START-->", "<!--SUBMISSION_END-->")
 
-    if meta_block and spec_block is not None and plan_block is not None:
+    if meta_block and (
+        (spec_block is not None and plan_block is not None) or submission_block is not None
+    ):
         meta = json.loads(_strip_code_fence(meta_block))
         meta.setdefault("title", re.sub(r"^\[Hackathon Spec\]\s*", "", title).strip())
-        meta["spec_content"] = spec_block
-        meta["plan_content"] = plan_block
+        if spec_block is not None:
+            meta["spec_content"] = spec_block
+        if plan_block is not None:
+            meta["plan_content"] = plan_block
+        if submission_block is not None:
+            meta["submission_content"] = submission_block
         return meta
 
     # 3. 回退解析 GitHub Issue Form (### 标题分段格式)
@@ -166,6 +173,7 @@ def parse_issue_markdown(body: str, title: str = "") -> dict[str, Any]:
 
     spec_content = pick("Spec 设计文档", "Spec", default="")
     plan_content = pick("Plan 实施计划", "Plan", default="")
+    submission_content = pick("后续参赛提交清单", "Submission", default="")
 
     if not parsed_title or not spec_content or not plan_content:
         raise ValueError("Issue 正文中缺少必填字段（比赛名称、Spec 设计文档或 Plan 实施计划）")
@@ -184,6 +192,7 @@ def parse_issue_markdown(body: str, title: str = "") -> dict[str, Any]:
         "passcode": pick("安全提交口令", "Passcode", default=""),
         "spec_content": spec_content,
         "plan_content": plan_content,
+        "submission_content": submission_content,
     }
 
 
@@ -225,26 +234,43 @@ def ingest_entry(
     title = str(payload.get("title", "")).strip()
     spec_content = str(payload.get("spec_content", "")).strip()
     plan_content = str(payload.get("plan_content", "")).strip()
-    if not title or not spec_content or not plan_content:
-        raise ValueError("payload 必须包含 title、spec_content 和 plan_content")
+    submission_content = str(payload.get("submission_content", "")).strip()
+    submission_only = bool(payload.get("submission_only"))
 
     slug = slugify(str(payload.get("slug") or title))
+    index_data = load_hackathons_index(root_dir)
+    hackathons: list[dict[str, Any]] = index_data.setdefault("hackathons", [])
+
+    existing_idx = next((i for i, h in enumerate(hackathons) if h.get("slug") == slug), None)
+    existing = hackathons[existing_idx] if existing_idx is not None else {}
+
     spec_dir = root_dir / "site" / "data" / "specs" / slug
     spec_dir.mkdir(parents=True, exist_ok=True)
 
+    if submission_only:
+        if not existing:
+            raise KeyError(f"submission_only 模式未找到已有比赛 slug='{slug}'")
+        if not submission_content:
+            raise ValueError("submission_only 模式必须提供 submission_content")
+        (spec_dir / "submission.md").write_text(submission_content + "\n", encoding="utf-8")
+        existing["submission_path"] = f"data/specs/{slug}/submission.md"
+        (spec_dir / "meta.json").write_text(json.dumps(existing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        save_hackathons_index(root_dir, index_data)
+        return existing
+
+    if not title or not spec_content or not plan_content:
+        raise ValueError("payload 必须包含 title、spec_content 和 plan_content")
+
     (spec_dir / "spec.md").write_text(spec_content + "\n", encoding="utf-8")
     (spec_dir / "plan.md").write_text(plan_content + "\n", encoding="utf-8")
+    if submission_content:
+        (spec_dir / "submission.md").write_text(submission_content + "\n", encoding="utf-8")
 
     tags = payload.get("tags") or ["AI Agent", "Full-Stack"]
     if isinstance(tags, str):
         tags = [t.strip() for t in re.split(r"[,，]", tags) if t.strip()]
 
     now = now_iso()
-    index_data = load_hackathons_index(root_dir)
-    hackathons: list[dict[str, Any]] = index_data.setdefault("hackathons", [])
-
-    existing_idx = next((i for i, h in enumerate(hackathons) if h.get("slug") == slug), None)
-    existing = hackathons[existing_idx] if existing_idx is not None else {}
 
     entry = {
         "id": slug,
@@ -259,6 +285,11 @@ def ingest_entry(
         "status": "pending_dev",
         "spec_path": f"data/specs/{slug}/spec.md",
         "plan_path": f"data/specs/{slug}/plan.md",
+        "submission_path": (
+            f"data/specs/{slug}/submission.md"
+            if submission_content or existing.get("submission_path")
+            else ""
+        ),
         "project_type": str(payload.get("project_type") or existing.get("project_type") or "fullstack-web"),
         "summary": str(payload.get("summary") or existing.get("summary") or ""),
         "submitted_by": actor.strip() if actor else str(payload.get("submitted_by") or DEFAULT_ALLOWED_OWNER),

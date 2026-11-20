@@ -452,6 +452,64 @@ Web3, AI Agent
         exit_code = start_project("demo-ai-agent-copilot", ROOT_DIR / "projects", preferred_port=18900, dry_run=True)
         self.assertEqual(exit_code, 0)
 
+    def test_09_submission_checklist_ingest_and_submission_only_mode(self):
+        """验证 submission.md 完整入库，以及为已完成比赛仅补全提交清单而不重置 status。"""
+        full_body = """
+<!--HACKATHON_META_START-->
+```json
+{
+  "slug": "sub-check-hack",
+  "title": "Submission Checklist Test",
+  "platform": "devpost",
+  "source_url": "https://devpost.com/hackathons/sub-check"
+}
+```
+<!--HACKATHON_META_END-->
+
+<!--SPEC_START-->
+# Spec
+<!--SPEC_END-->
+
+<!--PLAN_START-->
+# Plan
+<!--PLAN_END-->
+
+<!--SUBMISSION_START-->
+# 参赛提交清单
+- [ ] 录制 2 分钟 Demo 视频
+<!--SUBMISSION_END-->
+"""
+        payload = parse_issue_markdown(full_body)
+        entry = ingest_entry(payload, self.tmp_root)
+        self.assertEqual(entry["submission_path"], "data/specs/sub-check-hack/submission.md")
+        sub_file = self.tmp_root / "site" / "data" / "specs" / "sub-check-hack" / "submission.md"
+        self.assertTrue(sub_file.exists())
+        self.assertIn("录制 2 分钟 Demo 视频", sub_file.read_text(encoding="utf-8"))
+
+        # 模拟比赛已开发完成，再以 submission_only 模式更新清单，验证 status 保持 completed
+        mark_status("sub-check-hack", "completed", self.tmp_root, repo_url="https://github.com/test/sub-check")
+        update_body = """
+<!--HACKATHON_META_START-->
+```json
+{
+  "slug": "sub-check-hack",
+  "title": "Submission Checklist Test",
+  "submission_only": true
+}
+```
+<!--HACKATHON_META_END-->
+
+<!--SUBMISSION_START-->
+# 参赛提交清单 (已更新)
+- [ ] 录制 3 分钟视频并部署公网 URL
+<!--SUBMISSION_END-->
+"""
+        update_payload = parse_issue_markdown(update_body)
+        updated_entry = ingest_entry(update_payload, self.tmp_root)
+        self.assertEqual(updated_entry["status"], "completed")
+        self.assertEqual(updated_entry["repo_url"], "https://github.com/test/sub-check")
+        self.assertIn("部署公网 URL", sub_file.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -89,3 +89,11 @@ body:
       render: markdown
     validations:
       required: true
+  - type: textarea
+    id: submission
+    attributes:
+      label: 后续参赛提交清单 (submission.md)
+      description: 可选：粘贴比赛官方的提交要求（是否需录屏视频/部署公网网站/特定表单字段与演讲脚本等）
+      render: markdown
+    validations:
+      required: false

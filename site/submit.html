@@ -90,6 +90,16 @@
       </div>
 
       <div class="form-field">
+        <label for="submission-content">后续参赛提交清单 (submission.md Markdown 内容，由 Muse AI 抓取比赛官方要求)</label>
+        <textarea id="submission-content" name="submission_content" rows="10" placeholder="# 参赛提交与交付清单 (Submission Checklist)&#10;&#10;- [ ] 是否需要录制 Demo 视频（及最大时长/要点脚本）&#10;- [ ] 是否需要公网部署演示地址（Vercel/Render/云主机）&#10;- [ ] 平台提交表单必需字段（赛道选择、标签、简介文案）"></textarea>
+      </div>
+
+      <div class="form-field" style="flex-direction:row;align-items:center;gap:10px;">
+        <input id="submission-only-mode" name="submission_only" type="checkbox" style="width:auto;" />
+        <label for="submission-only-mode" style="margin:0;">仅补充/更新「参赛提交清单」（针对已开发完成的比赛，不重新触发代码开发）</label>
+      </div>
+
+      <div class="form-field">
         <label for="github-token">可选：GitHub Personal Access Token (仅保存在本地浏览器，用于 API 直写 Issue)</label>
         <input id="github-token" name="github_token" class="input" type="password" placeholder="ghp_... (留空即可使用免 Token 跳转 Issue 提交)" />
       </div>
